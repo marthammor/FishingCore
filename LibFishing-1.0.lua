@@ -9,17 +9,17 @@ Licensed under a Creative Commons "Attribution Non-Commercial Share Alike" Licen
 -- 5.0.4 has a problem with a global "_" (see some for loops below)
 local _
 
-local MAJOR_VERSION, MINOR_VERSION = "LibFishing-1.0", 101109
+local MAJOR_VERSION, MINOR_VERSION = "LibFishing-1.0", 110000 -- TWW
 assert(LibStub, MAJOR_VERSION .. " requires LibStub")
 
 local FishLib, lastVersion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
 if not FishLib then return end
 
-local WoWRetail = (_G.WOW_PROJECT_ID == _G.WOW_PROJECT_MAINLINE)
-local WoWClassic = (_G.WOW_PROJECT_ID == _G.WOW_PROJECT_CLASSIC)
-local WoWBC = (_G.WOW_PROJECT_ID == _G.WOW_PROJECT_BURNING_CRUSADE_CLASSIC)
-local WoWWrath = (_G.WOW_PROJECT_ID == _G.WOW_PROJECT_WRATH_CLASSIC)
-local WoWCata = (_G.WOW_PROJECT_ID == _G.WOW_PROJECT_CATACLYSM_CLASSIC)
+local WoWRetail = (WOW_PROJECT_ID == WOW_PROJECT_MAINLINE)
+local WoWClassic = (WOW_PROJECT_ID == WOW_PROJECT_CLASSIC)
+local WoWBC = (WOW_PROJECT_ID == WOW_PROJECT_BURNING_CRUSADE_CLASSIC)
+local WoWWrath = (WOW_PROJECT_ID == WOW_PROJECT_WRATH_CLASSIC)
+local WoWCata = (WOW_PROJECT_ID == WOW_PROJECT_CATACLYSM_CLASSIC)
 
 local WoW = {};
 if (GetBuildInfo) then
@@ -76,15 +76,19 @@ local BSZR = LibStub("LibBabble-SubZone-3.0"):GetReverseLookupTable();
 local HBD = LibStub("HereBeDragons-2.0");
 
 local LT
-if IsVanilla() then
+if WoWClassic then
     LT = LibStub("LibTouristClassicEra");
-elseif IsClassic() then
+--[[
+elseif WoWBC then
     LT = LibStub("LibTouristClassic-1.0");
+elseif WoWWrath then
+    LT = LibStub("LibTouristClassic-1.0");
+]]--
 else
     LT = LibStub("LibTourist-3.0");
 end
 
-FishLib.HBD = HBD
+FishLib.HBD = LibStub("HereBeDragons-2.0");
 
 if not lastVersion then
     FishLib.caughtSoFar = 0;
@@ -114,7 +118,7 @@ FishLib.ITEM_ICON = 10
 
 function FishLib:GetFishingProfession()
     local fishing;
-    if self:IsClassic() then
+    if WoWClassic then
         fishing, _ = self:GetFishingSpellInfo();
     else
         _, _, _, fishing, _, _ = GetProfessions();
@@ -137,7 +141,7 @@ local function FindSpellID(thisone)
 end
 
 function FishLib:GetFishingSpellInfo()
-    if self:IsClassic() then
+    if WoWClassic then
         local spell = FindSpellID("Interface\\Icons\\Trade_Fishing");
         if spell then
             local name, _, _ = GetSpellInfo(spell);
@@ -179,7 +183,7 @@ FishLib.continent_fishing = {
 }
 local DEFAULT_SKILL = FishLib.continent_fishing[1];
 
-if IsCrusade() then
+if WoWBC then
     FishLib.continent_fishing[2].max = 375
 end
 
