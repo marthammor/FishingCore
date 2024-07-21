@@ -11,6 +11,8 @@ externals:
         url: https://repos.wowace.com/wow/libtourist-3-0/trunk
     Libs/HereBeDragons-2.0:
         url: https://repos.curseforge.com/wow/herebedragons
+    Libs/LibTouristClassic-1.0:
+        url: https://repos.curseforge.com/wow/libtourist-classic/trunk
 
 ignore:
      - .pkgmeta
