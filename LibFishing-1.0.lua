@@ -86,7 +86,7 @@ else
     LT = LibStub("LibTourist-3.0");
 end
 
-FishLib.HBD = LibStub("HereBeDragons-2.0");
+FishLib.HBD = HBD
 
 if not lastVersion then
     FishLib.caughtSoFar = 0;

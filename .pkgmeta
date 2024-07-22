@@ -7,12 +7,16 @@ externals:
         url: https://repos.curseforge.com/wow/callbackhandler/trunk
     Libs/LibBabble-SubZone-3.0:
         url: https://repos.wowace.com/wow/libbabble-subzone-3-0/trunk
+    Libs/LibTouristClassicEra:
+        url: https://repos.wowace.com/wow/libtourist-classic-era
+        type: git
+    Libs/LibTouristClassic-1.0:
+        url: https://repos.wowace.com/wow/libtourist-classic
+        type: git
     Libs/LibTourist-3.0:
         url: https://repos.wowace.com/wow/libtourist-3-0/trunk
     Libs/HereBeDragons-2.0:
         url: https://repos.curseforge.com/wow/herebedragons
-    Libs/LibTouristClassic-1.0:
-        url: https://repos.curseforge.com/wow/libtourist-classic/trunk
 
 ignore:
      - .pkgmeta
