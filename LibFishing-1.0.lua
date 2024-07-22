@@ -9,16 +9,18 @@ Licensed under a Creative Commons "Attribution Non-Commercial Share Alike" Licen
 -- 5.0.4 has a problem with a global "_" (see some for loops below)
 local _
 
-local MAJOR_VERSION, MINOR_VERSION = "LibFishing-1.0", 110000 -- TWW
-assert(LibStub, MAJOR_VERSION .. " requires LibStub")
+---@class LibFishing-1.0
+local FishLib = {}
 
-local FishLib, lastVersion = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
-if not FishLib then return end
+local MAJOR, MINOR = "LibFishing-1.0", 110000 -- TWW 11.00.00
+assert(LibStub, MAJOR .. " requires LibStub")
+
+local _, lastVersion = LibStub:NewLibrary(MAJOR, MINOR)
 
 local WoWRetail = (WOW_PROJECT_ID == WOW_PROJECT_MAINLINE)
 local WoWClassic = (WOW_PROJECT_ID == WOW_PROJECT_CLASSIC)
-local WoWBC = (WOW_PROJECT_ID == WOW_PROJECT_BURNING_CRUSADE_CLASSIC)
-local WoWWrath = (WOW_PROJECT_ID == WOW_PROJECT_WRATH_CLASSIC)
+local WoWBC = (WOW_PROJECT_ID == WOW_PROJECT_BURNING_CRUSADE_CLASSIC) -- Fairly sure this no longer exists
+local WoWWrath = (WOW_PROJECT_ID == WOW_PROJECT_WRATH_CLASSIC)        -- Same with this
 local WoWCata = (WOW_PROJECT_ID == WOW_PROJECT_CATACLYSM_CLASSIC)
 
 local WoW = {};
@@ -38,7 +40,7 @@ else
     WoW.interface = 10900
 end
 
-function WOWVersion()
+function FishLib:WoWVersion()
     return WoW.major, WoW.minor, WoW.dot, WoWClassic;
 end
 
@@ -78,12 +80,8 @@ local HBD = LibStub("HereBeDragons-2.0");
 local LT
 if WoWClassic then
     LT = LibStub("LibTouristClassicEra");
---[[
-elseif WoWBC then
+elseif WoWCata then
     LT = LibStub("LibTouristClassic-1.0");
-elseif WoWWrath then
-    LT = LibStub("LibTouristClassic-1.0");
-]]--
 else
     LT = LibStub("LibTourist-3.0");
 end
@@ -95,7 +93,7 @@ if not lastVersion then
     FishLib.gearcheck = true
     FishLib.hasgear = false;
     FishLib.PLAYER_SKILL_READY = "PlayerSkillReady"
-    FishLib.havedata = IsClassic();
+    FishLib.havedata = WoWClassic;
 end
 
 FishLib.registered = FishLib.registered or CBH:New(FishLib, nil, nil, false)
@@ -115,6 +113,8 @@ FishLib.ITEM_SUBTYPE = 7
 FishLib.ITEM_STACK = 8
 FishLib.ITEM_EQUIPLOC = 9
 FishLib.ITEM_ICON = 10
+FishLib.ITEM_PRICE = 11
+FishLib.ITEM_CLASS = 12
 
 function FishLib:GetFishingProfession()
     local fishing;
@@ -212,7 +212,7 @@ function FishLib:UpdateFishingSkillData()
     for _, categoryID in pairs(categories) do
         for _, info in pairs(self.continent_fishing) do
             if (categoryID == info.cat) then
-                local data = C_TradeSkillUI.GetCategoryInfo(info.cat);
+                local data = GetCategoryInfo(info.cat);
                 --info.max = data.skillLineMaxLevel
                 info.rank = data.skillLineCurrentLevel
                 self.havedata = true
@@ -290,13 +290,13 @@ end
 
 -- Go ahead and forcibly get the trade skill data
 function FishLib:GetTradeSkillData()
-    if self:IsClassic() then
+    if WoWClassic then
         return
     end
     local btn = _G[SABUTTONNAME];
     if btn then
-        if (not IsAddOnLoaded(BlizzardTradeSkillUI)) then
-            LoadAddOn(BlizzardTradeSkillUI);
+        if (not C_AddOns.IsAddOnLoaded(BlizzardTradeSkillUI)) then
+            C_AddOns.LoadAddOn(BlizzardTradeSkillUI);
         end
         btn.skillupdate:SetScript("OnUpdate", SkillInitialize);
         btn.skillupdate:Show()
@@ -1311,7 +1311,7 @@ end
 
 function FishLib:GetItemInfoFields(link, ...)
     -- name, link, rarity, itemlevel, minlevel, itemtype
-    -- subtype, stackcount, equiploc, texture
+    -- subtype, stackcount, equiploc, texture, sellPrice, classID
     if (link) then
         link = self:ValidLink(link)
         local iteminfo = { GetItemInfo(link) }
@@ -1337,7 +1337,9 @@ function FishLib:GetItemInfo(link)
             FishLib.ITEM_SUBTYPE,
             FishLib.ITEM_STACK,
             FishLib.ITEM_EQUIPLOC,
-            FishLib.ITEM_ICON
+            FishLib.ITEM_ICON,
+            FishLib.ITEM_PRICE,
+            FishLib.ITEM_CLASS
         );
     end
 end
@@ -1512,7 +1514,7 @@ end
 function FishLib:GetTrackingID(tex)
     if (tex) then
         for id = 1, C_Minimap.GetNumTrackingTypes() do
-            local _, texture, _, _ = C_Minimap.GetTrackingInfo(id);
+            local _, texture, _, _, _, _ = C_Minimap.GetTrackingInfo(id);
             texture = texture .. "";
             if (texture == tex) then
                 return id;
@@ -2382,7 +2384,7 @@ function FishLib:GetPoleBonus()
         if (hmhe) then
             local id;
             -- IsFishingPole has set mainhand for us
-            if IsRetail() then
+            if WoWRetail then
                 id = self:GetFishingToolItem(true);
             else
                 id = self:GetMainHandItem(true);
@@ -2698,13 +2700,7 @@ end
 
 -- addon message support
 function FishLib:RegisterAddonMessagePrefix(prefix)
-    if not self:IsClassic() then
-        if (WOW.major < 8) then
-            RegisterAddonMessagePrefix(prefix)
-        else
-            C_ChatInfo.RegisterAddonMessagePrefix(prefix)
-        end
-    end
+    C_ChatInfo.RegisterAddonMessagePrefix(prefix)
 end
 
 -- translation support functions
@@ -2791,9 +2787,9 @@ local function LoadTranslation(source, lang, target, record)
 end
 
 function FishLib:AddonVersion(addon)
-    local addonCount = GetNumAddOns();
+    local addonCount = C_AddOns.GetNumAddOns();
     for addonIndex = 1, addonCount do
-        local name, title, notes, loadable, reason, security = GetAddOnInfo(addonIndex);
+        local name, _, _, _, _, _, _ = C_AddOns.GetAddOnInfo(addonIndex);
         if name == addon then
             return C_AddOns.GetAddOnMetadata(addonIndex, "Version");
         end
