@@ -272,7 +272,7 @@ local function SkillInitialize(self, elapsed)
             if self.tsfpos then
                 TradeSkillFrame:ClearAllPoints();
                 for _, point in ipairs(self.tsfpos) do
-                    TradeSkillFrame:SetPoint(unpack(point));
+                    TradeSkillFrame:SetPoint(table.unpack(point));
                 end
             end
             if self.tsfpanel then
@@ -653,7 +653,7 @@ function FishLib:GetBuff(buffId)
             local current_buff = UnitBuff("player", idx);
             if current_buff then
                 local info = { UnitBuff("player", idx) }
-                local spellid = select(10, unpack(info));
+                local spellid = select(10, table.unpack(info));
                 if (buffId == spellid) then
                     return idx, info
                 end
@@ -673,7 +673,7 @@ function FishLib:HasBuff(buffId, skipWait)
         else
             local idx, info = self:GetBuff(buffId);
             if idx then
-                local et = select(6, unpack(info));
+                local et = select(6, table.unpack(info));
                 return true, et;
             end
         end
@@ -1320,7 +1320,7 @@ function FishLib:GetItemInfoFields(link, ...)
             local sel_idx = select(idx, ...)
             tinsert(results, iteminfo[sel_idx])
         end
-        return unpack(results)
+        return table.unpack(results)
     end
 end
 
