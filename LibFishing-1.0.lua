@@ -646,14 +646,13 @@ function FishLib:WaitForBuff(buffId)
     end
 end
 
-local spellidx = nil;
 function FishLib:GetBuff(buffId)
     if (buffId) then
         for idx = 1, 40 do
             local current_buff = UnitBuff("player", idx);
             if current_buff then
-                local info = { UnitBuff("player", idx) }
-                local spellid = select(10, table.unpack(info));
+                local info = { C_UnitAuras.GetBuffDataByIndex("player", idx) }
+                local spellid = select(22, table.unpack(info));
                 if (buffId == spellid) then
                     return idx, info
                 end
@@ -672,8 +671,8 @@ function FishLib:HasBuff(buffId, skipWait)
             return true, GetTime() + 10
         else
             local idx, info = self:GetBuff(buffId);
-            if idx then
-                local et = select(6, table.unpack(info));
+            if idx and info then
+                local et = select(7, table.unpack(info));
                 return true, et;
             end
         end
@@ -686,7 +685,7 @@ function FishLib:CancelBuff(buffId)
         if BuffWatch[buffId] then
             BuffWatch[buffId] = nil
         end
-        local idx, info = self:GetBuff(buffId);
+        local idx, _ = self:GetBuff(buffId);
         if idx then
             CancelUnitBuff("player", idx)
         end
@@ -743,8 +742,18 @@ function FishLib:UseThisLure(lure, b, enchant, skill, level)
     return false, 0;
 end
 
+-- tcount: count table members even if they're not indexed by numbers
+-- From warcraft.wiki.gg table helpers
+local function tcount(table)
+    local n = 0
+    for _ in pairs(table) do
+        n = n + 1
+    end
+    return n
+end
+
 function FishLib:FindNextLure(b, state)
-    local n = table.getn(lureinventory);
+    local n = tcount(lureinventory);
     for s = state + 1, n, 1 do
         if (lureinventory[s]) then
             local id = lureinventory[s].id;
@@ -1344,11 +1353,14 @@ function FishLib:GetItemInfo(link)
     end
 end
 
+-- Unused??
 function FishLib:IsLinkableItem(link)
     local name, _link = self:GetItemInfoFields(link, self.ITEM_NAME, self.ITEM_LINK);
     return (name and _link);
 end
 
+ChatFrameEditBox = ChatFrameEditBox or {}
+-- Unused??
 function FishLib:ChatLink(item, name, color)
     if (item and name and ChatFrameEditBox:IsVisible()) then
         if (not color) then
@@ -1364,9 +1376,10 @@ function FishLib:ChatLink(item, name, color)
     end
 end
 
+FishLibTooltip = FishLibTooltip or {}
 -- code taken from examples on wowwiki
 function FishLib:GetFishTooltip(force)
-    local tooltip = FishLibTooltip;
+    local tooltip = FishLibTooltip
     if (force or not tooltip) then
         tooltip = CreateFrame("GameTooltip", "FishLibTooltip", nil, "GameTooltipTemplate");
         tooltip:SetOwner(WorldFrame, "ANCHOR_NONE");
@@ -1401,6 +1414,8 @@ function FishLib:GetPoleType()
     return fp_itemtype, fp_subtype;
 end
 
+--[[
+-- Unused??
 function FishLib:IsFishingPool(text)
     if (not text) then
         text = self:GetTooltipText();
@@ -1420,12 +1435,15 @@ function FishLib:IsFishingPool(text)
     -- return nil;
 end
 
+--Unused??
 function FishLib:IsHyperCompressedOcean(text)
 end
 
+--Unused??
 function FishLib:AddSchoolName(name)
     tinsert(self.SCHOOLS, { name = name, kind = self.SCHOOL_FISH });
 end
+]] --
 
 function FishLib:GetWornItem(get_id, slot)
     if (get_id) then
@@ -1647,7 +1665,7 @@ end
 -- Get how far away the specified location is from the player
 function FishLib:GetDistanceTo(zone, x, y)
     local px, py, pzone, _ = self:GetPlayerZoneCoords()
-    local dist, dx, dy = LT:GetYardDistance(pzone, px, py, zone, x, y)
+    local dist, _, _ = LT:GetYardDistance(pzone, px, py, zone, x, y)
     return dist
 end
 
@@ -1729,7 +1747,7 @@ function FishLib:GetCurrentMapContinent(debug)
 end
 
 function FishLib:GetCurrentMapId()
-    local _, _, zone, mapId = LT:GetBestZoneCoordinate()
+    local _, _, _, mapId = LT:GetBestZoneCoordinate()
     return mapId or 0
 end
 
@@ -1858,7 +1876,7 @@ end
 function FishLib:GetFishingSkillLine(join, withzone, isfishing)
     local part1 = "";
     local part2 = "";
-    local skill, mods, skillmax, _ = self:GetCurrentSkill();
+    local skill, mods, _, _ = self:GetCurrentSkill();
     local totskill = skill + mods;
     local subzone = GetSubZoneText();
     local zone = GetRealZoneText() or "Unknown";
@@ -1926,7 +1944,7 @@ function FishLib:CatchesAtSkill(skill)
 end
 
 function FishLib:GetSkillUpInfo()
-    local skill, mods, skillmax = self:GetCurrentSkill();
+    local skill, _, skillmax = self:GetCurrentSkill();
     if (skillmax and skill < skillmax) then
         local needed = self:CatchesAtSkill(skill);
         if (needed) then
@@ -2419,10 +2437,12 @@ end
 function FishLib:GetBestFishingItem(slotid, ignore)
     local item = nil
     local maxb = 0;
+    local slotname
     if not infoslot then
         self:GetInfoSlot()
+    else
+        slotname = infoslot[slotid].name;
     end
-    local slotname = infoslot[slotid].name;
 
     local link = GetInventoryItemLink("player", slotid);
     if (link) then
@@ -2856,13 +2876,13 @@ FLTrans:Setup("enUS", "school", "Fishing Lure",
     "Hyper-Compressed Ocean", FishLib.COMPRESSED_OCEAN);
 
 FLTrans:Setup("koKR", "떼", "낚시용 미끼",
-    "표류하는 잔해", FishLib.SCHOOL_WRECKAGE, --	 Floating Wreckage
-    "정기가 흐르는 물 웅덩이", FishLib.SCHOOL_WATER, --	 Patch of Elemental Water
-    "표류하는 파편", FishLib.SCHOOL_DEBRIS, --  Floating Debris
-    "떠다니는 기름", FishLib.SCHOOL_OIL, --  Oil Spill
-    "거품이는 진흙탕물", FishLib.SCHOOL_CHURNING, --	Muddy Churning Water
-    "깨끗한 물", FishLib.SCHOOL_WATER, --  Pure Water
-    "증기 양수기 표류물", FishLib.SCHOOL_FLOTSAM, --	Steam Pump Flotsam
+    "표류하는 잔해", FishLib.SCHOOL_WRECKAGE, -- Floating Wreckage
+    "정기가 흐르는 물 웅덩이", FishLib.SCHOOL_WATER, --	Patch of Elemental Water
+    "표류하는 파편", FishLib.SCHOOL_DEBRIS, -- Floating Debris
+    "떠다니는 기름", FishLib.SCHOOL_OIL, -- Oil Spill
+    "거품이는 진흙탕물", FishLib.SCHOOL_CHURNING, -- Muddy Churning Water
+    "깨끗한 물", FishLib.SCHOOL_WATER, -- Pure Water
+    "증기 양수기 표류물", FishLib.SCHOOL_FLOTSAM, -- Steam Pump Flotsam
     "맛둥어 떼", FishLib.SCHOOL_TASTY, -- School of Tastyfish
     "초압축 바다", FishLib.COMPRESSED_OCEAN);
 
