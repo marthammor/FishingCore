@@ -1,6 +1,6 @@
 ﻿--[[
 Name: LibTouristClassicEra
-Revision: $Rev: 242 $
+Revision: $Rev: 243 $
 Author(s): Odica; based on LibTourist-3.0 and LibTouristClassic-1.0
 Documentation: https://www.wowace.com/projects/libtourist-classic-era/pages/api-reference
 Git: https://repos.wowace.com/wow/libtourist-classic-era libtourist-classic-era
