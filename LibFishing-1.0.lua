@@ -25,7 +25,7 @@ local WoWCata = (WOW_PROJECT_ID == WOW_PROJECT_CATACLYSM_CLASSIC)
 
 local WoW = {};
 if (GetBuildInfo) then
-    local v, b, d, i = GetBuildInfo();
+    local v, b, d, i, _, _ = GetBuildInfo();
     WoW.build = b;
     WoW.date = d;
     local maj, min, dot = string.find(v, "(%d+).(%d+).(%d+)");
@@ -115,13 +115,18 @@ FishLib.ITEM_EQUIPLOC = 9
 FishLib.ITEM_ICON = 10
 FishLib.ITEM_PRICE = 11
 FishLib.ITEM_CLASS = 12
+FishLib.ITEM_SUBCLASS = 13
+FishLib.ITEM_BIND = 14
+FishLib.ITEM_EXP_ID = 15
+FishLib.ITEM_SETID = 16
+FishLib.ITEM_REAGENT = 17
 
 function FishLib:GetFishingProfession()
     local fishing;
-    if WoWClassic then
+    if WoWClassic or WoWCata then
         fishing, _ = self:GetFishingSpellInfo();
     else
-        _, _, _, fishing, _, _ = GetProfessions();
+        _, _, _, fishing, _ = GetProfessions();
     end
     return fishing
 end
@@ -141,10 +146,10 @@ local function FindSpellID(thisone)
 end
 
 function FishLib:GetFishingSpellInfo()
-    if WoWClassic then
+    if WoWClassic or WoWCata then
         local spell = FindSpellID("Interface\\Icons\\Trade_Fishing");
         if spell then
-            local name, _, _ = GetSpellInfo(spell);
+            local name, _, _, _, _, _, _, _ = GetSpellInfo(spell);
             return spell, name;
         end
         return 9, PROFESSIONS_FISHING;
@@ -154,11 +159,17 @@ function FishLib:GetFishingSpellInfo()
     if not fishing then
         return 9, PROFESSIONS_FISHING
     end
-    local name, _, _, _, count, offset, _ = GetProfessionInfo(fishing);
-    local id = nil;
+    local name, _, _, _, count, offset, _, _, _, _ = GetProfessionInfo(fishing);
+    local id = nil
+    local spellName, spellId = nil, nil
     for i = 1, count do
-        local _, spellId = GetSpellLink(offset + i, "spell");
-        local spellName = GetSpellInfo(spellId);
+        if WoWClassic or WoWCata then
+            _, spellId = GetSpellLink(offset + i, BOOKTYPE_SPELL);
+            spellName = GetSpellInfo(spellId);
+        else
+            _, spellId = C_Spell.GetSpellLink(offset + i, BOOKTYPE_SPELL);
+            spellName = C_Spell.GetSpellInfo(spellId);
+        end
         if (spellName == name) then
             id = spellId;
             break;
@@ -203,16 +214,18 @@ local FISHING_LEVELS = {
 local CHECKINTERVAL = 0.5
 local itsready = C_TradeSkillUI.IsTradeSkillReady
 local OpenTradeSkill = C_TradeSkillUI.OpenTradeSkill
-local GetTradeSkillLine = C_TradeSkillUI.GetTradeSkillLine
+local GetTradeSkillLine = C_TradeSkillUI.GetProfessionInfoBySkillLineID
 local GetCategoryInfo = C_TradeSkillUI.GetCategoryInfo
 local CloseTradeSkill = C_TradeSkillUI.CloseTradeSkill
 
 function FishLib:UpdateFishingSkillData()
     local categories = { C_TradeSkillUI.GetCategories() }
+    local data = {}
     for _, categoryID in pairs(categories) do
         for _, info in pairs(self.continent_fishing) do
             if (categoryID == info.cat) then
-                local data = GetCategoryInfo(info.cat);
+                C_TradeSkillUI.GetCategoryInfo(info.cat, data)
+                --local data = C_TradeSkillUI.GetCategoryInfo(info.cat)
                 --info.max = data.skillLineMaxLevel
                 info.rank = data.skillLineCurrentLevel
                 self.havedata = true
@@ -242,7 +255,7 @@ function FishLib:QueueUpdateFishingSkillData()
     end
 end
 
--- Open up the tradeskill window and get the current data
+-- Open up the tradeskill window and get the current data. Only Mainline safe!
 local function SkillInitialize(self, elapsed)
     self.lastUpdate = self.lastUpdate + elapsed;
     if self.lastUpdate > CHECKINTERVAL / 2 then
@@ -306,10 +319,10 @@ end
 function FishLib:UpdateFishingSkill()
     local fishing = self:GetFishingProfession();
     if (fishing) then
-        local continent, _ = self:GetCurrentMapContinent();
+        local continent, _, _ = self:GetCurrentMapContinent();
         local info = FishLib.continent_fishing[continent];
         if (info) then
-            local _, _, skill, _, _, _, _, _ = GetProfessionInfo(fishing);
+            local _, _, skill, _, _, _, _, _, _, _ = GetProfessionInfo(fishing);
             skill = skill or 0
             if (info.rank < skill) then
                 info.rank = skill
@@ -327,7 +340,7 @@ function FishLib:GetContinentSkill(continent)
     if (fishing) then
         local info = FishLib.continent_fishing[continent];
         if (info) then
-            local name, _, _, skillmax, _, _, _, mods = GetProfessionInfo(fishing);
+            local _, _, _, _, _, _, _, mods, _, _ = GetProfessionInfo(fishing);
             local _, lure = self:GetPoleBonus();
             return info.rank or 0, mods or 0, info.max or 0, lure or 0;
         end
@@ -337,7 +350,7 @@ end
 
 -- get our current fishing skill level
 function FishLib:GetCurrentSkill()
-    local continent, _ = self:GetCurrentMapContinent();
+    local continent, _, _ = self:GetCurrentMapContinent();
     return self:GetContinentSkill(continent)
 end
 
@@ -609,7 +622,7 @@ function FishLib:UpdateLureInventory()
     local b = 0;
     for _, lure in ipairs(FISHINGLURES) do
         local id = lure.id;
-        local count = GetItemCount(id);
+        local count = C_Item.GetItemCount(id);
         -- does this lure have to be "worn"
         if (count > 0) then
             local startTime, _, _ = C_Container.GetItemCooldown(id);
@@ -649,9 +662,8 @@ end
 function FishLib:GetBuff(buffId)
     if (buffId) then
         for idx = 1, 40 do
-            local current_buff = UnitBuff("player", idx);
-            if current_buff then
-                local info = { C_UnitAuras.GetBuffDataByIndex("player", idx) }
+            local info = { C_UnitAuras.GetBuffDataByIndex("player", idx) }
+            if info then
                 local spellid = select(22, table.unpack(info));
                 if (buffId == spellid) then
                     return idx, info
@@ -687,7 +699,7 @@ function FishLib:CancelBuff(buffId)
         end
         local idx, _ = self:GetBuff(buffId);
         if idx then
-            CancelUnitBuff("player", idx)
+            CancelUnitBuff("player", idx, CANCELABLE)
         end
     end
 end
@@ -832,7 +844,7 @@ end
 function FishLib:FindBestHat()
     for _, hat in ipairs(FISHINGHATS) do
         local id = hat["id"]
-        if GetItemCount(id) > 0 and self:IsWorn(id) then
+        if C_Item.GetItemCount(id) > 0 and self:IsWorn(id) then
             local startTime, _, _ = C_Container.GetItemCooldown(id);
             if (startTime == 0) then
                 return 1, hat;
@@ -1319,11 +1331,12 @@ function FishLib:SplitLink(link, get_id)
 end
 
 function FishLib:GetItemInfoFields(link, ...)
-    -- name, link, rarity, itemlevel, minlevel, itemtype
+    -- name, link, quality, itemlevel, minlevel, itemtype
     -- subtype, stackcount, equiploc, texture, sellPrice, classID
+    -- subclassId, bindType, expansionId, setId, craftingReagent
     if (link) then
         link = self:ValidLink(link)
-        local iteminfo = { GetItemInfo(link) }
+        local iteminfo = { C_Item.GetItemInfo(link) }
         local results = {}
         for idx = 1, select('#', ...) do
             local sel_idx = select(idx, ...)
@@ -1348,7 +1361,12 @@ function FishLib:GetItemInfo(link)
             FishLib.ITEM_EQUIPLOC,
             FishLib.ITEM_ICON,
             FishLib.ITEM_PRICE,
-            FishLib.ITEM_CLASS
+            FishLib.ITEM_CLASS,
+            FishLib.ITEM_SUBCLASS,
+            FishLib.ITEM_BIND,
+            FishLib.ITEM_EXP_ID,
+            FishLib.ITEM_SETID,
+            FishLib.ITEM_REAGENT
         );
     end
 end
@@ -1414,7 +1432,6 @@ function FishLib:GetPoleType()
     return fp_itemtype, fp_subtype;
 end
 
---[[
 -- Unused??
 function FishLib:IsFishingPool(text)
     if (not text) then
@@ -1443,7 +1460,6 @@ end
 function FishLib:AddSchoolName(name)
     tinsert(self.SCHOOLS, { name = name, kind = self.SCHOOL_FISH });
 end
-]] --
 
 function FishLib:GetWornItem(get_id, slot)
     if (get_id) then
@@ -1737,7 +1753,7 @@ function FishLib:GetMapContinent(mapId, debug)
             return continent_map[cMapId] or -1, cMapId, lastMapId;
         end
     else
-        return -1, -1;
+        return -1, -1, -1;
     end
 end
 
@@ -1854,7 +1870,7 @@ function FishLib:GetCurrentFishingLevel()
     if LT.GetFishinglevel then
         _, current_max = LT:GetFishingLevel(mapID)
     end
-    local continent, _ = self:GetCurrentMapContinent()
+    local continent, _, _ = self:GetCurrentMapContinent()
     if current_max == 0 then
         -- Let's just go with continent level skill for now, since
         -- subzone skill levels are now up in the air.
@@ -2398,7 +2414,7 @@ function FishLib:GetPoleBonus()
     if (self:IsFishingPole()) then
         -- get the total bonus for the pole
         local total = self:FishingBonusPoints(INVSLOT_MAINHAND, true);
-        local hmhe, _, _, _, _, _ = GetWeaponEnchantInfo();
+        local hmhe, _, _, _, _, _, _, _, _, _, _, _ = GetWeaponEnchantInfo();
         if (hmhe) then
             local id;
             -- IsFishingPole has set mainhand for us
@@ -2569,7 +2585,7 @@ end
 -- Find out where the player is. Based on code from Astrolabe and wowwiki notes
 function FishLib:GetCurrentPlayerPosition()
     local x, y, _, mapId = LT:GetBestZoneCoordinate()
-    local C = self:GetCurrentMapContinent();
+    local C, _, _ = self:GetCurrentMapContinent();
 
     return C, mapId, x, y;
 end
