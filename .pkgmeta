@@ -22,3 +22,7 @@ ignore:
      - .pkgmeta
      - .docmeta
      - .gitignore
+
+manual-changelog:
+  filename: CHANGELOG.md
+  markup-type: markdown
