@@ -6,5 +6,5 @@
 	<Include file="Libs\LibTouristClassicEra\lib.xml" />
 	<Include file="Libs\LibTouristClassic-1.0\lib.xml" />
 	<Include file="Libs\LibTourist-3.0\lib.xml" />
-	<Script file="LibFishing-1.0.lua" />
+	<Script file="FishingCore.lua" />
 </Ui>
