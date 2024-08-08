@@ -5,5 +5,13 @@
 ## Author: Sutorix
 ## X-Category: Library
 
-libs.xml
-FishingCore.lua
+
+Libs\Libstub\Libstub.lua
+Libs\CallbackHandler-1.0\CallbackHandler-1.0\CallbackHandler-1.0.xml
+Libs\LibBabble-SubZone-3.0\lib.xml
+Libs\HereBeDragons-2.0\HereBeDragons-2.0.lua
+Libs\LibTouristClassicEra\lib.xml
+Libs\LibTouristClassic-1.0\lib.xml
+Libs\LibTourist-3.0\lib.xml
+
+FishingCore.xml

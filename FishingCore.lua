@@ -6,16 +6,20 @@ Copyright (c) by Bob Schumaker
 Licensed under a Creative Commons "Attribution Non-Commercial Share Alike" License
 --]]
 
--- 5.0.4 has a problem with a global "_" (see some for loops below)
-local _
-
----@class FishingCore
-local FishLib = {}
+local _G, _G
 
 local MAJOR, MINOR = "FishingCore", 110000 -- TWW 11.00.00
-assert(LibStub, MAJOR .. " requires LibStub")
 
-local _, lastVersion = LibStub:NewLibrary(MAJOR, MINOR)
+local FishCore, lastVersion = LibStub:NewLibrary(MAJOR, MINOR)
+
+if not FishCore then return end -- already loaded by something else
+
+local tonumber, tostring, pairs, ipairs, type, next, select = tonumber, tostring, pairs, ipairs, type, next, select
+local unpack, sort = table.unpack, table.sort
+local getmetatable, setmetatable = getmetatable, setmetatable
+local format, find, sub, gsub, match, gmatch, len, lower =
+    string.format, string.find, string.sub, string.gsub, string.match, string.gmatch, string.len, string.lower
+local floor, huge = math.floor, math.huge
 
 local WoWRetail = (WOW_PROJECT_ID == WOW_PROJECT_MAINLINE)
 local WoWClassic = (WOW_PROJECT_ID == WOW_PROJECT_CLASSIC)
@@ -28,7 +32,7 @@ if (GetBuildInfo) then
     local v, b, d, i, _, _ = GetBuildInfo();
     WoW.build = b;
     WoW.date = d;
-    local maj, min, dot = string.find(v, "(%d+).(%d+).(%d+)");
+    local maj, min, dot = find(v, "(%d+).(%d+).(%d+)");
     WoW.major = tonumber(maj);
     WoW.minor = tonumber(min);
     WoW.dot = tonumber(dot);
@@ -40,7 +44,7 @@ else
     WoW.interface = 10900
 end
 
-function FishLib:WoWVersion()
+function FishCore:WoWVersion()
     return WoW.major, WoW.minor, WoW.dot, WoWClassic;
 end
 
@@ -86,42 +90,42 @@ else
     LT = LibStub("LibTourist-3.0");
 end
 
-FishLib.HBD = HBD
+FishCore.HBD = HBD
 
 if not lastVersion then
-    FishLib.caughtSoFar = 0;
-    FishLib.gearcheck = true
-    FishLib.hasgear = false;
-    FishLib.PLAYER_SKILL_READY = "PlayerSkillReady"
-    FishLib.havedata = WoWClassic;
+    FishCore.caughtSoFar = 0;
+    FishCore.gearcheck = true
+    FishCore.hasgear = false;
+    FishCore.PLAYER_SKILL_READY = "PlayerSkillReady"
+    FishCore.havedata = WoWClassic;
 end
 
-FishLib.registered = FishLib.registered or CBH:New(FishLib, nil, nil, false)
+FishCore.registered = FishCore.registered or CBH:New(FishCore)
 
 -- Secure action button
 local SABUTTONNAME = "LibFishingSAButton";
-FishLib.UNKNOWN = "UNKNOWN";
+FishCore.UNKNOWN = "UNKNOWN";
 
 -- GetItemInfo indexes
-FishLib.ITEM_NAME = 1
-FishLib.ITEM_LINK = 2
-FishLib.ITEM_QUALITY = 3
-FishLib.ITEM_LEVEL = 4
-FishLib.ITEM_MINLEVEL = 5
-FishLib.ITEM_TYPE = 6
-FishLib.ITEM_SUBTYPE = 7
-FishLib.ITEM_STACK = 8
-FishLib.ITEM_EQUIPLOC = 9
-FishLib.ITEM_ICON = 10
-FishLib.ITEM_PRICE = 11
-FishLib.ITEM_CLASS = 12
-FishLib.ITEM_SUBCLASS = 13
-FishLib.ITEM_BIND = 14
-FishLib.ITEM_EXP_ID = 15
-FishLib.ITEM_SETID = 16
-FishLib.ITEM_REAGENT = 17
+FishCore.ITEM_NAME = 1
+FishCore.ITEM_LINK = 2
+FishCore.ITEM_QUALITY = 3
+FishCore.ITEM_LEVEL = 4
+FishCore.ITEM_MINLEVEL = 5
+FishCore.ITEM_TYPE = 6
+FishCore.ITEM_SUBTYPE = 7
+FishCore.ITEM_STACK = 8
+FishCore.ITEM_EQUIPLOC = 9
+FishCore.ITEM_ICON = 10
+FishCore.ITEM_PRICE = 11
+FishCore.ITEM_CLASS = 12
+FishCore.ITEM_SUBCLASS = 13
+FishCore.ITEM_BIND = 14
+FishCore.ITEM_EXP_ID = 15
+FishCore.ITEM_SETID = 16
+FishCore.ITEM_REAGENT = 17
 
-function FishLib:GetFishingProfession()
+function FishCore:GetFishingProfession()
     local fishing;
     if WoWClassic or WoWCata then
         fishing, _ = self:GetFishingSpellInfo();
@@ -145,7 +149,7 @@ local function FindSpellID(thisone)
     return nil;
 end
 
-function FishLib:GetFishingSpellInfo()
+function FishCore:GetFishingSpellInfo()
     if WoWClassic or WoWCata then
         local spell = FindSpellID("Interface\\Icons\\Trade_Fishing");
         if spell then
@@ -167,7 +171,7 @@ function FishLib:GetFishingSpellInfo()
             _, spellId = GetSpellLink(offset + i, BOOKTYPE_SPELL);
             spellName = GetSpellInfo(spellId);
         else
-            _, spellId = C_Spell.GetSpellLink(offset + i, BOOKTYPE_SPELL);
+            spellId = C_Spell.GetSpellLink(offset + i, BOOKTYPE_SPELL);
             spellName = C_Spell.GetSpellInfo(spellId);
         end
         if (spellName == name) then
@@ -178,7 +182,7 @@ function FishLib:GetFishingSpellInfo()
     return id, name
 end
 
-FishLib.continent_fishing = {
+FishCore.continent_fishing = {
     { ["max"] = 300, ["skillid"] = 356,  ["cat"] = 1100, ["rank"] = 0 }, -- Default -- 2592?
     { ["max"] = 300, ["skillid"] = 356,  ["cat"] = 1100, ["rank"] = 0 },
     { ["max"] = 75,  ["skillid"] = 2591, ["cat"] = 1102, ["rank"] = 0 }, -- Outland Fishing
@@ -192,10 +196,10 @@ FishLib.continent_fishing = {
     { ["max"] = 200, ["skillid"] = 2754, ["cat"] = 1391, ["rank"] = 0 }, -- Shadowlands Fishing
     { ["max"] = 100, ["skillid"] = 2826, ["cat"] = 1805, ["rank"] = 0 }, -- Dragonflight Fishing
 }
-local DEFAULT_SKILL = FishLib.continent_fishing[1];
+local DEFAULT_SKILL = FishCore.continent_fishing[1];
 
 if WoWBC then
-    FishLib.continent_fishing[2].max = 375
+    FishCore.continent_fishing[2].max = 375
 end
 
 local FISHING_LEVELS = {
@@ -218,7 +222,7 @@ local GetTradeSkillLine = C_TradeSkillUI.GetProfessionInfoBySkillLineID
 local GetCategoryInfo = C_TradeSkillUI.GetCategoryInfo
 local CloseTradeSkill = C_TradeSkillUI.CloseTradeSkill
 
-function FishLib:UpdateFishingSkillData()
+function FishCore:UpdateFishingSkillData()
     local categories = { C_TradeSkillUI.GetCategories() }
     local data = {}
     for _, categoryID in pairs(categories) do
@@ -239,14 +243,14 @@ local function SkillUpdate(self, elapsed)
         self.lastUpdate = self.lastUpdate + elapsed;
         if self.lastUpdate > CHECKINTERVAL then
             self.lib:UpdateFishingSkillData()
-            self.lib.registered:Fire(FishLib.PLAYER_SKILL_READY)
+            self.lib.registered:Fire(FishCore.PLAYER_SKILL_READY)
             self:Hide()
             self.lastUpdate = 0
         end
     end
 end
 
-function FishLib:QueueUpdateFishingSkillData()
+function FishCore:QueueUpdateFishingSkillData()
     if not self.havedata then
         local btn = _G[SABUTTONNAME];
         if btn then
@@ -285,7 +289,7 @@ local function SkillInitialize(self, elapsed)
             if self.tsfpos then
                 TradeSkillFrame:ClearAllPoints();
                 for _, point in ipairs(self.tsfpos) do
-                    TradeSkillFrame:SetPoint(table.unpack(point));
+                    TradeSkillFrame:SetPoint(unpack(point));
                 end
             end
             if self.tsfpanel then
@@ -295,14 +299,14 @@ local function SkillInitialize(self, elapsed)
             self.tsfpos = nil
             self:Hide()
             self:SetScript("OnUpdate", SkillUpdate);
-            self.lib.registered:Fire(FishLib.PLAYER_SKILL_READY)
+            self.lib.registered:Fire(FishCore.PLAYER_SKILL_READY)
         end
         self.lastUpdate = 0
     end
 end
 
 -- Go ahead and forcibly get the trade skill data
-function FishLib:GetTradeSkillData()
+function FishCore:GetTradeSkillData()
     if WoWClassic then
         return
     end
@@ -316,11 +320,11 @@ function FishLib:GetTradeSkillData()
     end
 end
 
-function FishLib:UpdateFishingSkill()
+function FishCore:UpdateFishingSkill()
     local fishing = self:GetFishingProfession();
     if (fishing) then
         local continent, _, _ = self:GetCurrentMapContinent();
-        local info = FishLib.continent_fishing[continent];
+        local info = FishCore.continent_fishing[continent];
         if (info) then
             local _, _, skill, _, _, _, _, _, _, _ = GetProfessionInfo(fishing);
             skill = skill or 0
@@ -328,17 +332,17 @@ function FishLib:UpdateFishingSkill()
                 info.rank = skill
             end
             if skill then
-                self.registered:Fire(FishLib.PLAYER_SKILL_READY)
+                self.registered:Fire(FishCore.PLAYER_SKILL_READY)
             end
         end
     end
 end
 
 -- get the fishing skill for the specified continent
-function FishLib:GetContinentSkill(continent)
+function FishCore:GetContinentSkill(continent)
     local fishing = self:GetFishingProfession();
     if (fishing) then
-        local info = FishLib.continent_fishing[continent];
+        local info = FishCore.continent_fishing[continent];
         if (info) then
             local _, _, _, _, _, _, _, mods, _, _ = GetProfessionInfo(fishing);
             local _, lure = self:GetPoleBonus();
@@ -349,7 +353,7 @@ function FishLib:GetContinentSkill(continent)
 end
 
 -- get our current fishing skill level
-function FishLib:GetCurrentSkill()
+function FishCore:GetCurrentSkill()
     local continent, _, _ = self:GetCurrentMapContinent();
     return self:GetContinentSkill(continent)
 end
@@ -563,7 +567,7 @@ end
 
 -- sort ascending bonus and ascending time
 -- we may have to treat "Heat-Treated Spinning Lure" differently someday
-table.sort(FISHINGLURES,
+sort(FISHINGLURES,
     function(a, b)
         if (a.b == b.b) then
             return a.d < b.d;
@@ -572,26 +576,26 @@ table.sort(FISHINGLURES,
         end
     end);
 
-table.sort(FISHINGHATS,
+sort(FISHINGHATS,
     function(a, b)
         return a.b > b.b;
     end);
 
 
 
-function FishLib:GetLureTable()
+function FishCore:GetLureTable()
     return FISHINGLURES;
 end
 
-function FishLib:GetHatTable()
+function FishCore:GetHatTable()
     return NATS_HATS;
 end
 
-function FishLib:GetDraenorHatTable()
+function FishCore:GetDraenorHatTable()
     return DRAENOR_HATS;
 end
 
-function FishLib:IsWorn(itemid)
+function FishCore:IsWorn(itemid)
     itemid = tonumber(itemid)
     for slot = 1, 19 do
         local id = GetInventoryItemID("player", slot);
@@ -602,7 +606,7 @@ function FishLib:IsWorn(itemid)
     -- return nil
 end
 
-function FishLib:IsItemOneHanded(item)
+function FishCore:IsItemOneHanded(item)
     if (item) then
         local bodyslot = self:GetItemInfoFields(item, self.ITEM_EQUIPLOC);
         if (bodyslot == "INVTYPE_2HWEAPON" or bodyslot == INVTYPE_2HWEAPON) then
@@ -614,7 +618,7 @@ end
 
 local useinventory = {};
 local lureinventory = {};
-function FishLib:UpdateLureInventory()
+function FishCore:UpdateLureInventory()
     local rawskill, _, _, _ = self:GetCurrentSkill();
 
     useinventory = {};
@@ -645,13 +649,13 @@ function FishLib:UpdateLureInventory()
     return lureinventory, useinventory;
 end
 
-function FishLib:GetLureInventory()
+function FishCore:GetLureInventory()
     return lureinventory, useinventory;
 end
 
 -- Handle buffs
 local BuffWatch = {}
-function FishLib:WaitForBuff(buffId)
+function FishCore:WaitForBuff(buffId)
     local btn = _G[SABUTTONNAME];
     if (btn) then
         BuffWatch[buffId] = GetTime() + 0.6
@@ -659,12 +663,12 @@ function FishLib:WaitForBuff(buffId)
     end
 end
 
-function FishLib:GetBuff(buffId)
+function FishCore:GetBuff(buffId)
     if (buffId) then
         for idx = 1, 40 do
             local info = { C_UnitAuras.GetBuffDataByIndex("player", idx) }
             if info then
-                local spellid = select(22, table.unpack(info));
+                local spellid = select(22, unpack(info));
                 if (buffId == spellid) then
                     return idx, info
                 end
@@ -676,7 +680,7 @@ function FishLib:GetBuff(buffId)
     return nil, nil
 end
 
-function FishLib:HasBuff(buffId, skipWait)
+function FishCore:HasBuff(buffId, skipWait)
     if (buffId) then
         -- if we're waiting, assume we're going to have it
         if (not skipWait and BuffWatch[buffId]) then
@@ -684,7 +688,7 @@ function FishLib:HasBuff(buffId, skipWait)
         else
             local idx, info = self:GetBuff(buffId);
             if idx and info then
-                local et = select(7, table.unpack(info));
+                local et = select(7, unpack(info));
                 return true, et;
             end
         end
@@ -692,7 +696,7 @@ function FishLib:HasBuff(buffId, skipWait)
     return nil, nil
 end
 
-function FishLib:CancelBuff(buffId)
+function FishCore:CancelBuff(buffId)
     if buffId then
         if BuffWatch[buffId] then
             BuffWatch[buffId] = nil
@@ -704,7 +708,7 @@ function FishLib:CancelBuff(buffId)
     end
 end
 
-function FishLib:HasAnyBuff(buffs)
+function FishCore:HasAnyBuff(buffs)
     for _, buff in pairs(buffs) do
         local has, et = self:HasBuff(buff.spell)
         if has then
@@ -714,11 +718,11 @@ function FishLib:HasAnyBuff(buffs)
     -- return nil
 end
 
-function FishLib:FishingForAttention()
+function FishCore:FishingForAttention()
     return self:HasBuff(394009)
 end
 
-function FishLib:HasLureBuff()
+function FishCore:HasLureBuff()
     for _, lure in ipairs(FISHINGLURES) do
         if self:HasBuff(lure.spell) then
             return true
@@ -727,7 +731,7 @@ function FishLib:HasLureBuff()
     -- return nil
 end
 
-function FishLib:HasHatBuff()
+function FishCore:HasHatBuff()
     for _, hat in ipairs(FISHINGHATS) do
         if self:HasBuff(hat.spell) then
             return true
@@ -737,7 +741,7 @@ function FishLib:HasHatBuff()
 end
 
 -- Deal with lures
-function FishLib:UseThisLure(lure, b, enchant, skill, level)
+function FishCore:UseThisLure(lure, b, enchant, skill, level)
     if (lure) then
         local startTime, _, _ = C_Container.GetItemCooldown(lure.id);
         -- already check for skill being nil, so that will skip the whole check with level
@@ -764,7 +768,7 @@ local function tcount(table)
     return n
 end
 
-function FishLib:FindNextLure(b, state)
+function FishCore:FindNextLure(b, state)
     local n = tcount(lureinventory);
     for s = state + 1, n, 1 do
         if (lureinventory[s]) then
@@ -780,9 +784,9 @@ function FishLib:FindNextLure(b, state)
     -- return nil;
 end
 
-FishLib.LastUsed = nil;
+FishCore.LastUsed = nil;
 
-function FishLib:FindBestLure(b, state, usedrinks, forcemax)
+function FishCore:FindBestLure(b, state, usedrinks, forcemax)
     local level = self:GetCurrentFishingLevel();
     if (level and level > 1) then
         if (forcemax) then
@@ -841,7 +845,7 @@ function FishLib:FindBestLure(b, state, usedrinks, forcemax)
     -- return nil;
 end
 
-function FishLib:FindBestHat()
+function FishCore:FindBestHat()
     for _, hat in ipairs(FISHINGHATS) do
         local id = hat["id"]
         if C_Item.GetItemCount(id) > 0 and self:IsWorn(id) then
@@ -878,7 +882,7 @@ if (not fishlibframe) then
     fishlibframe:RegisterEvent("EQUIPMENT_SWAP_FINISHED");
 end
 
-fishlibframe.fl = FishLib;
+fishlibframe.fl = FishCore;
 
 fishlibframe:SetScript("OnEvent", function(self, event, ...)
     local arg1 = select(1, ...);
@@ -984,7 +988,7 @@ local slotmap = {
 };
 
 -- Fishing level by 8.0 map id
-FishLib.FishingLevels = {
+FishCore.FishingLevels = {
     [1] = 25,
     [241] = 650,
     [122] = 450,
@@ -1104,7 +1108,7 @@ FishLib.FishingLevels = {
 }
 
 local infonames = nil;
-function FishLib:GetInfoNames()
+function FishCore:GetInfoNames()
     if not infonames then
         infonames = {}
         for idx = 1, 18, 1 do
@@ -1115,7 +1119,7 @@ function FishLib:GetInfoNames()
 end
 
 local infoslot = nil;
-function FishLib:GetInfoSlot()
+function FishCore:GetInfoSlot()
     if not infoslot then
         infoslot = {}
         for idx = 1, 18, 1 do
@@ -1125,11 +1129,11 @@ function FishLib:GetInfoSlot()
     return infoslot
 end
 
-function FishLib:GetSlotInfo()
+function FishCore:GetSlotInfo()
     return INVSLOT_MAINHAND, INVSLOT_OFFHAND, slotinfo;
 end
 
-function FishLib:GetSlotMap()
+function FishCore:GetSlotMap()
     return slotmap;
 end
 
@@ -1163,7 +1167,7 @@ local function deepcopy(orig)
     return copy
 end
 
-function FishLib:copytable(tab, level)
+function FishCore:copytable(tab, level)
     if (tab) then
         if (level == 1) then
             return shallowcopy(tab)
@@ -1176,7 +1180,7 @@ function FishLib:copytable(tab, level)
 end
 
 -- count tables that don't have monotonic integer indexes
-function FishLib:tablecount(tab)
+function FishCore:tablecount(tab)
     local n = 0;
     for _, _ in pairs(tab) do
         n = n + 1;
@@ -1186,7 +1190,7 @@ end
 
 -- iterate over a table using sorted keys
 -- https://stackoverflow.com/questions/15706270/sort-a-table-in-lua
-function FishLib:spairs(t, order)
+function FishCore:spairs(t, order)
     -- collect the keys
     local keys = {}
     for k in pairs(t) do keys[#keys + 1] = k end
@@ -1194,9 +1198,9 @@ function FishLib:spairs(t, order)
     -- if order function given, sort by it by passing the table and keys a, b,
     -- otherwise just sort the keys
     if order then
-        table.sort(keys, function(a, b) return order(t, a, b) end)
+        sort(keys, function(a, b) return order(t, a, b) end)
     else
-        table.sort(keys)
+        sort(keys)
     end
 
     -- return the iterator function
@@ -1210,21 +1214,21 @@ function FishLib:spairs(t, order)
 end
 
 -- return a lookup for table values, doesn't do unique
-function FishLib:tablemap(t)
+function FishCore:tablemap(t)
     local set = {}
     for _, l in ipairs(t) do set[l] = true end
     return set
 end
 
 -- return a lookup for table values, doesn't do unique
-function FishLib:keytable(t)
+function FishCore:keytable(t)
     local tab = {}
     for k, _ in pairs(t) do tinsert(tab, k) end
     return tab
 end
 
 -- return a printable representation of a value
-function FishLib:printable(val)
+function FishCore:printable(val)
     if (type(val) == "boolean") then
         return val and "true" or "false";
     elseif (type(val) == "table") then
@@ -1240,7 +1244,7 @@ function FishLib:printable(val)
         return tab .. " ]"
     elseif (val ~= nil) then
         val = tostring(val)
-        val = string.gsub(val, "\124", "\124\124");
+        val = gsub(val, "\124", "\124\124");
         return val;
     else
         return "nil";
@@ -1253,20 +1257,20 @@ end
 -- In 7.0, the single digit '0' can be dropped, leading to ":::::" sequences
 local _itempattern = "|c(%x+)|Hitem:(%d+):(%d*)(:[^|]+)|h%[(.*)%]|h|r"
 
-function FishLib:GetItemPattern()
+function FishCore:GetItemPattern()
     if (not _itempattern) then
         -- This should work all the time
         self:GetPoleType(); -- force the default pole into the cache
         local pat = self:GetItemInfoFields(6256, self.ITEM_ICON);
-        pat = string.gsub(pat, "|c(%x+)|Hitem:(%d+)(:%d+)", "|c(%%x+)|Hitem:(%%d+)(:%%d+)");
-        pat = string.gsub(pat, ":[-]?%d+", ":[-]?%%d+");
-        _itempattern = string.gsub(pat, "|h%[(.*)%]|h|r", "|h%%[(.*)%%]|h|r");
+        pat = gsub(pat, "|c(%x+)|Hitem:(%d+)(:%d+)", "|c(%%x+)|Hitem:(%%d+)(:%%d+)");
+        pat = gsub(pat, ":[-]?%d+", ":[-]?%%d+");
+        _itempattern = gsub(pat, "|h%[(.*)%]|h|r", "|h%%[(.*)%%]|h|r");
     end
     return _itempattern;
 end
 
-function FishLib:ValidLink(link, full)
-    if type(link) ~= "string" or string.match(link, "^%d+") then
+function FishCore:ValidLink(link, full)
+    if type(link) ~= "string" or match(link, "^%d+") then
         link = "item:" .. link
     end
     if full then
@@ -1275,7 +1279,7 @@ function FishLib:ValidLink(link, full)
     return link
 end
 
-function FishLib:SetHyperlink(tooltip, link, uncleared)
+function FishCore:SetHyperlink(tooltip, link, uncleared)
     link = self:ValidLink(link, true);
     if (not uncleared) then
         tooltip:ClearLines();
@@ -1283,19 +1287,19 @@ function FishLib:SetHyperlink(tooltip, link, uncleared)
     tooltip:SetHyperlink(link);
 end
 
-function FishLib:SetInventoryItem(tooltip, target, item, uncleared)
+function FishCore:SetInventoryItem(tooltip, target, item, uncleared)
     if (not uncleared) then
         tooltip:ClearLines();
     end
     tooltip:SetInventoryItem(target, item);
 end
 
-function FishLib:ParseLink(link)
+function FishCore:ParseLink(link)
     if (link) then
         -- Make the link canonical
         link = self:ValidLink(link, true);
 
-        local _, _, color, id, enchant, numberlist, name = string.find(link, self:GetItemPattern());
+        local _, _, color, id, enchant, numberlist, name = find(link, self:GetItemPattern());
         if (name) then
             local numbers = {}
             -- numbers:
@@ -1305,7 +1309,7 @@ function FishLib:ParseLink(link)
             -- upgrade id
             tinsert(numbers, tonumber(id))
             tinsert(numbers, tonumber(enchant or 0))
-            for entry in string.gmatch(numberlist, ":%d*") do
+            for entry in gmatch(numberlist, ":%d*") do
                 local value = tonumber(strmatch(entry, ":(%d+)")) or 0;
                 tinsert(numbers, value);
             end
@@ -1314,7 +1318,7 @@ function FishLib:ParseLink(link)
     end
 end
 
-function FishLib:SplitLink(link, get_id)
+function FishCore:SplitLink(link, get_id)
     if (link) then
         local name, color, numbers = self:ParseLink(link);
         if (name) then
@@ -1330,7 +1334,7 @@ function FishLib:SplitLink(link, get_id)
     end
 end
 
-function FishLib:GetItemInfoFields(link, ...)
+function FishCore:GetItemInfoFields(link, ...)
     -- name, link, quality, itemlevel, minlevel, itemtype
     -- subtype, stackcount, equiploc, texture, sellPrice, classID
     -- subclassId, bindType, expansionId, setId, craftingReagent
@@ -1342,51 +1346,51 @@ function FishLib:GetItemInfoFields(link, ...)
             local sel_idx = select(idx, ...)
             tinsert(results, iteminfo[sel_idx])
         end
-        return table.unpack(results)
+        return unpack(results)
     end
 end
 
-function FishLib:GetItemInfo(link)
+function FishCore:GetItemInfo(link)
     if (link) then
         link = self:ValidLink(link)
         return self:GetItemInfoFields(link,
-            FishLib.ITEM_NAME,
-            FishLib.ITEM_LINK,
-            FishLib.ITEM_QUALITY,
-            FishLib.ITEM_LEVEL,
-            FishLib.ITEM_MINLEVEL,
-            FishLib.ITEM_TYPE,
-            FishLib.ITEM_SUBTYPE,
-            FishLib.ITEM_STACK,
-            FishLib.ITEM_EQUIPLOC,
-            FishLib.ITEM_ICON,
-            FishLib.ITEM_PRICE,
-            FishLib.ITEM_CLASS,
-            FishLib.ITEM_SUBCLASS,
-            FishLib.ITEM_BIND,
-            FishLib.ITEM_EXP_ID,
-            FishLib.ITEM_SETID,
-            FishLib.ITEM_REAGENT
+            FishCore.ITEM_NAME,
+            FishCore.ITEM_LINK,
+            FishCore.ITEM_QUALITY,
+            FishCore.ITEM_LEVEL,
+            FishCore.ITEM_MINLEVEL,
+            FishCore.ITEM_TYPE,
+            FishCore.ITEM_SUBTYPE,
+            FishCore.ITEM_STACK,
+            FishCore.ITEM_EQUIPLOC,
+            FishCore.ITEM_ICON,
+            FishCore.ITEM_PRICE,
+            FishCore.ITEM_CLASS,
+            FishCore.ITEM_SUBCLASS,
+            FishCore.ITEM_BIND,
+            FishCore.ITEM_EXP_ID,
+            FishCore.ITEM_SETID,
+            FishCore.ITEM_REAGENT
         );
     end
 end
 
 -- Unused??
-function FishLib:IsLinkableItem(link)
+function FishCore:IsLinkableItem(link)
     local name, _link = self:GetItemInfoFields(link, self.ITEM_NAME, self.ITEM_LINK);
     return (name and _link);
 end
 
 ChatFrameEditBox = ChatFrameEditBox or {}
 -- Unused??
-function FishLib:ChatLink(item, name, color)
+function FishCore:ChatLink(item, name, color)
     if (item and name and ChatFrameEditBox:IsVisible()) then
         if (not color) then
             color = self.COLOR_HEX_WHITE;
         elseif (self["COLOR_HEX_" .. color]) then
             color = self["COLOR_HEX_" .. color];
         end
-        if (string.len(color) == 6) then
+        if (len(color) == 6) then
             color = "ff" .. color;
         end
         local link = "|c" .. color .. "|Hitem:" .. item .. "|h[" .. name .. "]|h|r";
@@ -1396,7 +1400,7 @@ end
 
 FishLibTooltip = FishLibTooltip or {}
 -- code taken from examples on wowwiki
-function FishLib:GetFishTooltip(force)
+function FishCore:GetFishTooltip(force)
     local tooltip = FishLibTooltip
     if (force or not tooltip) then
         tooltip = CreateFrame("GameTooltip", "FishLibTooltip", nil, "GameTooltipTemplate");
@@ -1418,7 +1422,7 @@ end
 local fp_itemtype = nil;
 local fp_subtype = nil;
 
-function FishLib:GetPoleType()
+function FishCore:GetPoleType()
     if (not fp_itemtype) then
         fp_itemtype, fp_subtype = self:GetItemInfoFields(6256, self.ITEM_TYPE, self.ITEM_SUBTYPE);
         if (not fp_itemtype) then
@@ -1433,19 +1437,19 @@ function FishLib:GetPoleType()
 end
 
 -- Unused??
-function FishLib:IsFishingPool(text)
+function FishCore:IsFishingPool(text)
     if (not text) then
         text = self:GetTooltipText();
     end
     if (text) then
-        local check = string.lower(text);
+        local check = lower(text);
         for _, info in pairs(self.SCHOOLS) do
-            local name = string.lower(info.name);
-            if (string.find(check, name)) then
+            local name = lower(info.name);
+            if (find(check, name)) then
                 return info;
             end
         end
-        if (string.find(check, self.SCHOOL)) then
+        if (find(check, self.SCHOOL)) then
             return { name = text, kind = self.SCHOOL_FISH };
         end
     end
@@ -1453,15 +1457,15 @@ function FishLib:IsFishingPool(text)
 end
 
 --Unused??
-function FishLib:IsHyperCompressedOcean(text)
+function FishCore:IsHyperCompressedOcean(text)
 end
 
 --Unused??
-function FishLib:AddSchoolName(name)
+function FishCore:AddSchoolName(name)
     tinsert(self.SCHOOLS, { name = name, kind = self.SCHOOL_FISH });
 end
 
-function FishLib:GetWornItem(get_id, slot)
+function FishCore:GetWornItem(get_id, slot)
     if (get_id) then
         return GetInventoryItemID("player", slot);
     else
@@ -1469,19 +1473,19 @@ function FishLib:GetWornItem(get_id, slot)
     end
 end
 
-function FishLib:GetMainHandItem(get_id)
+function FishCore:GetMainHandItem(get_id)
     return self:GetWornItem(get_id, INVSLOT_MAINHAND);
 end
 
-function FishLib:GetFishingToolItem(get_id)
+function FishCore:GetFishingToolItem(get_id)
     return self:GetWornItem(get_id, INVSLOT_FISHING_TOOL);
 end
 
-function FishLib:GetHeadItem(get_id)
+function FishCore:GetHeadItem(get_id)
     return self:GetWornItem(get_id, INVSLOT_HEAD);
 end
 
-function FishLib:IsFishingPole(itemLink)
+function FishCore:IsFishingPole(itemLink)
     if (not itemLink) then
         -- Get the main hand item texture
         itemLink = self:GetMainHandItem();
@@ -1496,9 +1500,9 @@ function FishLib:IsFishingPole(itemLink)
         if (not fp_itemtype and itemTexture) then
             -- If there is in fact an item in the main hand, and it's texture
             -- that matches the fishing pole texture, then we have a fishing pole
-            itemTexture = string.lower(itemTexture);
-            if (string.find(itemTexture, "inv_fishingpole") or
-                    string.find(itemTexture, "fishing_journeymanfisher")) then
+            itemTexture = lower(itemTexture);
+            if (find(itemTexture, "inv_fishingpole") or
+                    find(itemTexture, "fishing_journeymanfisher")) then
                 -- Make sure it's not "Nat Pagle's Fish Terminator"
                 if (id ~= 19944) then
                     fp_itemtype = itemtype;
@@ -1513,12 +1517,12 @@ function FishLib:IsFishingPole(itemLink)
     return false;
 end
 
-function FishLib:ForceGearCheck()
+function FishCore:ForceGearCheck()
     self.gearcheck = true;
     self.hasgear = false;
 end
 
-function FishLib:IsFishingGear()
+function FishCore:IsFishingGear()
     if (self.gearcheck) then
         if (self:IsFishingPole()) then
             self.hasgear = true;
@@ -1536,7 +1540,8 @@ function FishLib:IsFishingGear()
     return self.hasgear;
 end
 
-function FishLib:IsFishingReady(partial)
+---@field
+function FishCore:IsFishingReady(partial)
     if (partial) then
         return self:IsFishingGear();
     else
@@ -1545,7 +1550,7 @@ function FishLib:IsFishingReady(partial)
 end
 
 -- fish tracking skill
-function FishLib:GetTrackingID(tex)
+function FishCore:GetTrackingID(tex)
     if (tex) then
         for id = 1, C_Minimap.GetNumTrackingTypes() do
             local _, texture, _, _, _, _ = C_Minimap.GetTrackingInfo(id);
@@ -1560,7 +1565,7 @@ end
 
 -- local FINDFISHTEXTURE = "Interface\\Icons\\INV_Misc_Fish_02";
 local FINDFISHTEXTURE = "133888";
-function FishLib:GetFindFishID()
+function FishCore:GetFindFishID()
     if (not self.FindFishID) then
         self.FindFishID = self:GetTrackingID(FINDFISHTEXTURE);
     end
@@ -1579,11 +1584,11 @@ bobber["zhTW"] = "釣魚浮標";
 bobber["zhCN"] = "垂钓水花";
 
 -- in case the addon is smarter than us
-function FishLib:SetBobberName(name)
+function FishCore:SetBobberName(name)
     self.BOBBER_NAME = name;
 end
 
-function FishLib:GetBobberName()
+function FishCore:GetBobberName()
     if (not self.BOBBER_NAME) then
         local locale = GetLocale();
         if (bobber[locale]) then
@@ -1595,7 +1600,7 @@ function FishLib:GetBobberName()
     return self.BOBBER_NAME;
 end
 
-function FishLib:GetTooltipText()
+function FishCore:GetTooltipText()
     if (GameTooltip:IsVisible()) then
         local text = _G["GameTooltipTextLeft1"];
         if (text) then
@@ -1605,37 +1610,37 @@ function FishLib:GetTooltipText()
     -- return nil;
 end
 
-function FishLib:SaveTooltipText()
+function FishCore:SaveTooltipText()
     self.lastTooltipText = self:GetTooltipText();
     return self.lastTooltipText;
 end
 
-function FishLib:GetLastTooltipText()
+function FishCore:GetLastTooltipText()
     return self.lastTooltipText;
 end
 
-function FishLib:ClearLastTooltipText()
+function FishCore:ClearLastTooltipText()
     self.lastTooltipText = nil;
 end
 
-function FishLib:OnFishingBobber()
+function FishCore:OnFishingBobber()
     if (GameTooltip:IsVisible() and GameTooltip:GetAlpha() == 1) then
         local text = GameTooltipTextLeft1:GetText() or self:GetLastTooltipText();
         -- let a partial match work (for translations)
-        return (text and string.find(text, self:GetBobberName()));
+        return (text and find(text, self:GetBobberName()));
     end
 end
 
 local ACTIONDOUBLEWAIT = 0.4;
 local MINACTIONDOUBLECLICK = 0.05;
 
-function FishLib:WatchBobber(flag)
+function FishCore:WatchBobber(flag)
     self.watchBobber = flag;
 end
 
 -- look for double clicks
-function FishLib:CheckForDoubleClick(button)
-    if FishLib.MapButton[button] ~= self.buttonevent then
+function FishCore:CheckForDoubleClick(button)
+    if FishCore.MapButton[button] ~= self.buttonevent then
         return false;
     end
     if (GetNumLootItems() == 0 and self.lastClickTime) then
@@ -1655,78 +1660,78 @@ function FishLib:CheckForDoubleClick(button)
     return false;
 end
 
-function FishLib:ExtendDoubleClick()
+function FishCore:ExtendDoubleClick()
     if (self.lastClickTime) then
         self.lastClickTime = self.lastClickTime + ACTIONDOUBLEWAIT / 2;
     end
 end
 
-function FishLib:GetLocZone(mapId)
+function FishCore:GetLocZone(mapId)
     return HBD:GetLocalizedMap(mapId) or UNKNOWN
 end
 
-function FishLib:GetZoneSize(mapId)
+function FishCore:GetZoneSize(mapId)
     return LT:GetZoneYardSize(mapId);
 end
 
-function FishLib:GetWorldDistance(zone, x1, y1, x2, y2)
+function FishCore:GetWorldDistance(zone, x1, y1, x2, y2)
     return HBD:GetWorldDistance(zone, x1, y1, x2, y2)
 end
 
-function FishLib:GetPlayerZoneCoords()
+function FishCore:GetPlayerZoneCoords()
     local px, py, pzone, mapid = LT:GetBestZoneCoordinate()
     return px, py, pzone, mapid
 end
 
 -- Get how far away the specified location is from the player
-function FishLib:GetDistanceTo(zone, x, y)
+function FishCore:GetDistanceTo(zone, x, y)
     local px, py, pzone, _ = self:GetPlayerZoneCoords()
     local dist, _, _ = LT:GetYardDistance(pzone, px, py, zone, x, y)
     return dist
 end
 
-FishLib.KALIMDOR = 1
-FishLib.EASTERN_KINDOMS = 2
-FishLib.OUTLAND = 3
-FishLib.NORTHREND = 4
-FishLib.THE_MAELSTROM = 5
-FishLib.PANDARIA = 6
-FishLib.DRAENOR = 7
-FishLib.BROKEN_ISLES = 8
-FishLib.KUL_TIRAS = 9
-FishLib.ZANDALAR = 10
-FishLib.SHADOWLANDS = 11
-FishLib.DRAGONFLIGHT = 12
+FishCore.KALIMDOR = 1
+FishCore.EASTERN_KINDOMS = 2
+FishCore.OUTLAND = 3
+FishCore.NORTHREND = 4
+FishCore.THE_MAELSTROM = 5
+FishCore.PANDARIA = 6
+FishCore.DRAENOR = 7
+FishCore.BROKEN_ISLES = 8
+FishCore.KUL_TIRAS = 9
+FishCore.ZANDALAR = 10
+FishCore.SHADOWLANDS = 11
+FishCore.DRAGONFLIGHT = 12
 
 -- Darkmoon Island is it's own continent?
 local continent_map = {
-    [12] = FishLib.KALIMDOR,        -- Kalimdor
-    [13] = FishLib.EASTERN_KINDOMS, -- Eastern Kingons
-    [101] = FishLib.OUTLAND,        -- Outland
-    [113] = FishLib.NORTHREND,      -- Northrend
-    [276] = FishLib.THE_MAELSTROM,  -- The Maelstrom
-    [424] = FishLib.PANDARIA,       -- Pandaria
-    [572] = FishLib.DRAENOR,        -- Draenor
-    [619] = FishLib.BROKEN_ISLES,   -- Broken Isles
-    [876] = FishLib.KUL_TIRAS,      -- Kul Tiras
-    [875] = FishLib.ZANDALAR,       -- Zandalar
-    [1355] = FishLib.KUL_TIRAS,     -- Nazjatar
-    [407] = FishLib.THE_MAELSTROM,  -- Darkmoon Island
-    [1550] = FishLib.SHADOWLANDS,   -- Shadowlands
-    [1978] = FishLib.DRAGONFLIGHT,  -- Dragon Isles
+    [12] = FishCore.KALIMDOR,        -- Kalimdor
+    [13] = FishCore.EASTERN_KINDOMS, -- Eastern Kingons
+    [101] = FishCore.OUTLAND,        -- Outland
+    [113] = FishCore.NORTHREND,      -- Northrend
+    [276] = FishCore.THE_MAELSTROM,  -- The Maelstrom
+    [424] = FishCore.PANDARIA,       -- Pandaria
+    [572] = FishCore.DRAENOR,        -- Draenor
+    [619] = FishCore.BROKEN_ISLES,   -- Broken Isles
+    [876] = FishCore.KUL_TIRAS,      -- Kul Tiras
+    [875] = FishCore.ZANDALAR,       -- Zandalar
+    [1355] = FishCore.KUL_TIRAS,     -- Nazjatar
+    [407] = FishCore.THE_MAELSTROM,  -- Darkmoon Island
+    [1550] = FishCore.SHADOWLANDS,   -- Shadowlands
+    [1978] = FishCore.DRAGONFLIGHT,  -- Dragon Isles
 }
 
 local special_maps = {
-    [244] = FishLib.THE_MAELSTROM,
-    [245] = FishLib.THE_MAELSTROM, -- Tol Barad
-    [201] = FishLib.THE_MAELSTROM, -- Vashj'ir
-    [198] = FishLib.THE_MAELSTROM, -- Hyjal
-    [249] = FishLib.THE_MAELSTROM, -- Uldum
-    [241] = FishLib.THE_MAELSTROM, -- Twilight Highlands
-    [207] = FishLib.THE_MAELSTROM, -- Deepholm
-    [338] = FishLib.THE_MAELSTROM, -- Molten Front
-    [51] = FishLib.THE_MAELSTROM,  -- Swamp of Sorrows
-    [122] = FishLib.OUTLAND,       -- Isle of Quel'Danas
+    [244] = FishCore.THE_MAELSTROM,
+    [245] = FishCore.THE_MAELSTROM, -- Tol Barad
+    [201] = FishCore.THE_MAELSTROM, -- Vashj'ir
+    [198] = FishCore.THE_MAELSTROM, -- Hyjal
+    [249] = FishCore.THE_MAELSTROM, -- Uldum
+    [241] = FishCore.THE_MAELSTROM, -- Twilight Highlands
+    [207] = FishCore.THE_MAELSTROM, -- Deepholm
+    [338] = FishCore.THE_MAELSTROM, -- Molten Front
+    [51] = FishCore.THE_MAELSTROM,  -- Swamp of Sorrows
+    [122] = FishCore.OUTLAND,       -- Isle of Quel'Danas
 }
 
 -- Continents
@@ -1734,7 +1739,7 @@ local special_maps = {
 -- Draenor, 7, 572
 -- Broken Isles, 8, 619
 -- Dragon Isles, 12, 1978
-function FishLib:GetMapContinent(mapId, debug)
+function FishCore:GetMapContinent(mapId, debug)
     if HBD.mapData[mapId] and mapId then
         local lastMapId;
         local cMapId = mapId;
@@ -1757,17 +1762,17 @@ function FishLib:GetMapContinent(mapId, debug)
     end
 end
 
-function FishLib:GetCurrentMapContinent(debug)
+function FishCore:GetCurrentMapContinent(debug)
     local mapId = self:GetCurrentMapId();
     return self:GetMapContinent(mapId, debug)
 end
 
-function FishLib:GetCurrentMapId()
+function FishCore:GetCurrentMapId()
     local _, _, _, mapId = LT:GetBestZoneCoordinate()
     return mapId or 0
 end
 
-function FishLib:GetZoneInfo()
+function FishCore:GetZoneInfo()
     local zone = GetRealZoneText();
     if (not zone or zone == "") then
         zone = UNKNOWN;
@@ -1780,7 +1785,7 @@ function FishLib:GetZoneInfo()
     return self:GetCurrentMapId(), subzone
 end
 
-function FishLib:GetBaseZoneInfo()
+function FishCore:GetBaseZoneInfo()
     local mapID = self:GetCurrentMapId()
     local subzone = GetSubZoneText();
     if (not subzone or subzone == "") then
@@ -1792,9 +1797,9 @@ end
 
 -- translate zones and subzones
 -- need to handle the fact that French uses "Stormwind" instead of "Stormwind City"
-function FishLib:GetBaseSubZone(sname)
-    if (sname == FishLib.UNKNOWN or sname == UNKNOWN) then
-        return FishLib.UNKNOWN;
+function FishCore:GetBaseSubZone(sname)
+    if (sname == FishCore.UNKNOWN or sname == UNKNOWN) then
+        return FishCore.UNKNOWN;
     end
 
     if (sname and not BSL[sname] and BSZR[sname]) then
@@ -1802,14 +1807,14 @@ function FishLib:GetBaseSubZone(sname)
     end
 
     if (not sname) then
-        sname = FishLib.UNKNOWN;
+        sname = FishCore.UNKNOWN;
     end
 
     return sname;
 end
 
-function FishLib:GetLocSubZone(sname)
-    if (sname == FishLib.UNKNOWN or sname == UNKNOWN) then
+function FishCore:GetLocSubZone(sname)
+    if (sname == FishCore.UNKNOWN or sname == UNKNOWN) then
         return UNKNOWN;
     end
 
@@ -1817,7 +1822,7 @@ function FishLib:GetLocSubZone(sname)
         sname = BSZ[sname];
     end
     if (not sname) then
-        sname = FishLib.UNKNOWN;
+        sname = FishCore.UNKNOWN;
     end
     return sname;
 end
@@ -1864,7 +1869,7 @@ for zone, level in pairs(subzoneskills) do
 end
 
 -- this should be something useful for BfA
-function FishLib:GetCurrentFishingLevel()
+function FishCore:GetCurrentFishingLevel()
     local mapID = self:GetCurrentMapId()
     local current_max = 0
     if LT.GetFishinglevel then
@@ -1889,7 +1894,7 @@ function FishLib:GetCurrentFishingLevel()
 end
 
 -- return a nicely formatted line about the local zone skill and yours
-function FishLib:GetFishingSkillLine(join, withzone, isfishing)
+function FishCore:GetFishingSkillLine(join, withzone, isfishing)
     local part1 = "";
     local part2 = "";
     local skill, mods, _, _ = self:GetCurrentSkill();
@@ -1909,7 +1914,7 @@ function FishLib:GetFishingSkillLine(join, withzone, isfishing)
                 perc = 1.0;
             end
             part1 = part1 .. "|cff" ..
-                self:GetThresholdHexColor(perc * perc) .. level .. " (" .. math.floor(perc * perc * 100) .. "%)|r";
+                self:GetThresholdHexColor(perc * perc) .. level .. " (" .. floor(perc * perc * 100) .. "%)|r";
         else
             -- need to translate this on our own
             part1 = part1 .. self:Red(NONE_KEY);
@@ -1941,16 +1946,16 @@ tinsert(skilltable, { ["level"] = 525, ["inc"] = 6 });
 tinsert(skilltable, { ["level"] = 600, ["inc"] = 10 });
 
 local newskilluptable = {};
-function FishLib:SetSkillupTable(table)
+function FishCore:SetSkillupTable(table)
     newskilluptable = table;
 end
 
-function FishLib:GetSkillupTable()
+function FishCore:GetSkillupTable()
     return newskilluptable;
 end
 
 -- this would be faster as a binary search, but I'm not sure it matters :-)
-function FishLib:CatchesAtSkill(skill)
+function FishCore:CatchesAtSkill(skill)
     for _, chk in ipairs(skilltable) do
         if (skill < chk.level) then
             return chk.inc;
@@ -1959,7 +1964,7 @@ function FishLib:CatchesAtSkill(skill)
     -- return nil;
 end
 
-function FishLib:GetSkillUpInfo()
+function FishCore:GetSkillUpInfo()
     local skill, _, skillmax = self:GetCurrentSkill();
     if (skillmax and skill < skillmax) then
         local needed = self:CatchesAtSkill(skill);
@@ -1973,17 +1978,17 @@ function FishLib:GetSkillUpInfo()
 end
 
 -- we should have some way to believe
-function FishLib:SetCaughtSoFar(value)
+function FishCore:SetCaughtSoFar(value)
     self.caughtSoFar = value or 0;
 end
 
-function FishLib:GetCaughtSoFar()
+function FishCore:GetCaughtSoFar()
     return self.caughtSoFar;
 end
 
 -- Find an action bar for fishing, if there is one
 local FISHINGTEXTURE = 136245;
-function FishLib:GetFishingActionBarID(force)
+function FishCore:GetFishingActionBarID(force)
     if (force or not self.ActionBarID) then
         for slot = 1, 72 do
             local tex = GetActionTexture(slot);
@@ -1996,7 +2001,7 @@ function FishLib:GetFishingActionBarID(force)
     return self.ActionBarID;
 end
 
-function FishLib:ClearFishingActionBarID()
+function FishCore:ClearFishingActionBarID()
     self.ActionBarID = nil;
 end
 
@@ -2016,7 +2021,7 @@ MissedFishItems[45188] = "Withered Kelp";
 MissedFishItems[45189] = "Torn Sail";
 MissedFishItems[45191] = "Empty Clam";
 
-function FishLib:IsMissedFish(id)
+function FishCore:IsMissedFish(id)
     if (MissedFishItems[id]) then
         return true;
     end
@@ -2031,10 +2036,10 @@ local function SplitColor(color)
                 color[i] = SplitColor(c);
             end
         elseif (type(color) == "string") then
-            local a = tonumber(string.sub(color, 1, 2), 16);
-            local r = tonumber(string.sub(color, 3, 4), 16);
-            local g = tonumber(string.sub(color, 5, 6), 16);
-            local b = tonumber(string.sub(color, 7, 8), 16);
+            local a = tonumber(sub(color, 1, 2), 16);
+            local r = tonumber(sub(color, 3, 4), 16);
+            local g = tonumber(sub(color, 5, 6), 16);
+            local b = tonumber(sub(color, 7, 8), 16);
             color = { a = a, r = r, g = g, b = b };
         end
     end
@@ -2059,7 +2064,7 @@ local function AddTooltipLine(l)
     end
 end
 
-function FishLib:AddTooltip(text, tooltip)
+function FishCore:AddTooltip(text, tooltip)
     if (not tooltip) then
         tooltip = GameTooltip;
     end
@@ -2076,7 +2081,7 @@ function FishLib:AddTooltip(text, tooltip)
     end
 end
 
-function FishLib:FindChatWindow(name)
+function FishCore:FindChatWindow(name)
     local frame;
     for i = 1, NUM_CHAT_WINDOWS do
         frame = _G["ChatFrame" .. i];
@@ -2087,7 +2092,7 @@ function FishLib:FindChatWindow(name)
     -- return nil, nil;
 end
 
-function FishLib:GetChatWindow(name)
+function FishCore:GetChatWindow(name)
     if (canCreateFrame) then
         local frame, frametab = self:FindChatWindow(name);
         if (frame) then
@@ -2111,7 +2116,7 @@ function FishLib:GetChatWindow(name)
     return DEFAULT_CHAT_FRAME, nil;
 end
 
-function FishLib:GetFrameInfo(framespec)
+function FishCore:GetFrameInfo(framespec)
     local n = nil;
     if framespec then
         if (type(framespec) == "string") then
@@ -2146,19 +2151,19 @@ local function BuffUpdate(self, elapsed)
     end
 end
 
-function FishLib:WillTaint()
+function FishCore:WillTaint()
     return (InCombatLockdown() or (UnitAffectingCombat("player") or UnitAffectingCombat("pet")))
 end
 
-function FishLib:SetCombat(flag)
+function FishCore:SetCombat(flag)
     self.combat_flag = flag
 end
 
-function FishLib:InCombat()
+function FishCore:InCombat()
     return self.combat_flag or self:WillTaint()
 end
 
-function FishLib:CreateSAButton()
+function FishCore:CreateSAButton()
     local btn = _G[SABUTTONNAME];
     if (not btn) then
         btn = CreateFrame("Button", SABUTTONNAME, nil, "SecureActionButtonTemplate");
@@ -2195,43 +2200,43 @@ function FishLib:CreateSAButton()
     btn.fl = self;
 end
 
-FishLib.MOUSE1 = "RightButtonDown";
-FishLib.MOUSE2 = "Button4Down";
-FishLib.MOUSE3 = "Button5Down";
-FishLib.MOUSE4 = "MiddleButtonDown";
-FishLib.CastButton = {};
-FishLib.CastButton[FishLib.MOUSE1] = "RightButton";
-FishLib.CastButton[FishLib.MOUSE2] = "Button4";
-FishLib.CastButton[FishLib.MOUSE3] = "Button5";
-FishLib.CastButton[FishLib.MOUSE4] = "MiddleButton";
-FishLib.CastingKeys = {};
-FishLib.CastingKeys[FishLib.MOUSE1] = "BUTTON2";
-FishLib.CastingKeys[FishLib.MOUSE2] = "BUTTON4";
-FishLib.CastingKeys[FishLib.MOUSE3] = "BUTTON5";
-FishLib.CastingKeys[FishLib.MOUSE4] = "BUTTON3";
-FishLib.MapButton = {};
-FishLib.MapButton["RightButton"] = FishLib.MOUSE1;
-FishLib.MapButton["Button4"] = FishLib.MOUSE2;
-FishLib.MapButton["Button5"] = FishLib.MOUSE3;
-FishLib.MapButton["MiddleButton"] = FishLib.MOUSE4;
+FishCore.MOUSE1 = "RightButtonDown";
+FishCore.MOUSE2 = "Button4Down";
+FishCore.MOUSE3 = "Button5Down";
+FishCore.MOUSE4 = "MiddleButtonDown";
+FishCore.CastButton = {};
+FishCore.CastButton[FishCore.MOUSE1] = "RightButton";
+FishCore.CastButton[FishCore.MOUSE2] = "Button4";
+FishCore.CastButton[FishCore.MOUSE3] = "Button5";
+FishCore.CastButton[FishCore.MOUSE4] = "MiddleButton";
+FishCore.CastingKeys = {};
+FishCore.CastingKeys[FishCore.MOUSE1] = "BUTTON2";
+FishCore.CastingKeys[FishCore.MOUSE2] = "BUTTON4";
+FishCore.CastingKeys[FishCore.MOUSE3] = "BUTTON5";
+FishCore.CastingKeys[FishCore.MOUSE4] = "BUTTON3";
+FishCore.MapButton = {};
+FishCore.MapButton["RightButton"] = FishCore.MOUSE1;
+FishCore.MapButton["Button4"] = FishCore.MOUSE2;
+FishCore.MapButton["Button5"] = FishCore.MOUSE3;
+FishCore.MapButton["MiddleButton"] = FishCore.MOUSE4;
 
 
-function FishLib:GetSAMouseEvent()
+function FishCore:GetSAMouseEvent()
     if (not self.buttonevent) then
         self.buttonevent = "RightButtonDown";
     end
     return self.buttonevent;
 end
 
-function FishLib:GetSAMouseButton()
+function FishCore:GetSAMouseButton()
     return self.CastButton[self:GetSAMouseEvent()];
 end
 
-function FishLib:GetSAMouseKey()
+function FishCore:GetSAMouseKey()
     return self.CastingKeys[self:GetSAMouseEvent()];
 end
 
-function FishLib:SetSAMouseEvent(buttonevent)
+function FishCore:SetSAMouseEvent(buttonevent)
     if (not buttonevent) then
         buttonevent = "RightButtonDown";
     end
@@ -2247,14 +2252,14 @@ function FishLib:SetSAMouseEvent(buttonevent)
     -- return nil;
 end
 
-function FishLib:ClearAllAttributes()
+function FishCore:ClearAllAttributes()
     local btn = _G[SABUTTONNAME];
     if (not btn) then
         return;
     end
 end
 
-function FishLib:CleanSAButton(override)
+function FishCore:CleanSAButton(override)
     local btn = _G[SABUTTONNAME];
     if (btn) then
         for _, attrib in ipairs({ "type", "spell", "action", "toy", "item", "target-slot", "unit", "macrotext", "macro" }) do
@@ -2264,7 +2269,7 @@ function FishLib:CleanSAButton(override)
     return btn
 end
 
-function FishLib:SetOverrideBindingClick()
+function FishCore:SetOverrideBindingClick()
     local btn = _G[SABUTTONNAME];
     if (btn) then
         local buttonkey = self:GetSAMouseKey();
@@ -2272,7 +2277,7 @@ function FishLib:SetOverrideBindingClick()
     end
 end
 
-function FishLib:InvokeFishing(useaction)
+function FishCore:InvokeFishing(useaction)
     local btn = self:CleanSAButton(true)
     if (not btn) then
         return;
@@ -2290,7 +2295,7 @@ function FishLib:InvokeFishing(useaction)
     self:SetOverrideBindingClick()
 end
 
-function FishLib:InvokeLuring(id, itemtype)
+function FishCore:InvokeLuring(id, itemtype)
     local btn = self:CleanSAButton(true)
     if (not btn) then
         return;
@@ -2314,7 +2319,7 @@ function FishLib:InvokeLuring(id, itemtype)
     end
 end
 
-function FishLib:InvokeMacro(macrotext)
+function FishCore:InvokeMacro(macrotext)
     local btn = self:CleanSAButton(true)
     if (not btn) then
         return;
@@ -2330,7 +2335,7 @@ function FishLib:InvokeMacro(macrotext)
     self:SetOverrideBindingClick()
 end
 
-function FishLib:OverrideClick(postclick)
+function FishCore:OverrideClick(postclick)
     local btn = _G[SABUTTONNAME];
     if (not btn) then
         return;
@@ -2341,7 +2346,7 @@ function FishLib:OverrideClick(postclick)
     --    print("OverrideClick")
 end
 
-function FishLib:ClickSAButton()
+function FishCore:ClickSAButton()
     local btn = _G[SABUTTONNAME];
     if (not btn) then
         return;
@@ -2362,14 +2367,14 @@ local function EnumerateTooltipLines_helper(...)
     return lines;
 end
 
-function FishLib:EnumerateTooltipLines(tooltip)
+function FishCore:EnumerateTooltipLines(tooltip)
     return EnumerateTooltipLines_helper(tooltip:GetRegions())
 end
 
 -- Fishing bonus. We used to be able to get the current modifier from
 -- the skill API, but now we have to figure it out ourselves
 local match;
-function FishLib:FishingBonusPoints(item, inv)
+function FishCore:FishingBonusPoints(item, inv)
     local points = 0;
     if (item and item ~= "") then
         if (not match) then
@@ -2395,9 +2400,9 @@ function FishLib:FishingBonusPoints(item, inv)
         local lines = EnumerateTooltipLines_helper(tooltip:GetRegions())
         for i = 1, #lines do
             local bodyslot = lines[i]:gsub("^%s*(.-)%s*$", "%1");
-            if (string.len(bodyslot) > 0) then
+            if (len(bodyslot) > 0) then
                 for _, pat in ipairs(match) do
-                    local _, _, bonus = string.find(bodyslot, pat);
+                    local _, _, bonus = find(bodyslot, pat);
                     if (bonus) then
                         points = points + bonus;
                     end
@@ -2410,7 +2415,7 @@ end
 
 -- if we have a fishing pole, return the bonus from the pole
 -- and the bonus from a lure, if any, separately
-function FishLib:GetPoleBonus()
+function FishCore:GetPoleBonus()
     if (self:IsFishingPole()) then
         -- get the total bonus for the pole
         local total = self:FishingBonusPoints(INVSLOT_MAINHAND, true);
@@ -2434,7 +2439,7 @@ function FishLib:GetPoleBonus()
     return 0, 0;
 end
 
-function FishLib:GetOutfitBonus()
+function FishCore:GetOutfitBonus()
     local bonus = 0;
     -- we can skip the ammo and ranged slots
     for i = 1, 16, 1 do
@@ -2450,7 +2455,7 @@ function FishLib:GetOutfitBonus()
     return bonus + pole, lure;
 end
 
-function FishLib:GetBestFishingItem(slotid, ignore)
+function FishCore:GetBestFishingItem(slotid, ignore)
     local item = nil
     local maxb = 0;
     local slotname
@@ -2492,7 +2497,7 @@ function FishLib:GetBestFishingItem(slotid, ignore)
 end
 
 -- return a list of the best items we have for a fishing outfit
-function FishLib:GetFishingOutfitItems(wearing, nopole, ignore)
+function FishCore:GetFishingOutfitItems(wearing, nopole, ignore)
     -- find fishing gear
     -- no affinity, check all bags
     local outfit = nil;
@@ -2512,7 +2517,7 @@ function FishLib:GetFishingOutfitItems(wearing, nopole, ignore)
 end
 
 -- look in a particular bag
-function FishLib:CheckThisBag(bag, id, skipcount)
+function FishCore:CheckThisBag(bag, id, skipcount)
     -- get the number of slots in the bag (0 if no bag)
     local numSlots = C_Container.GetContainerNumSlots(bag);
     if (numSlots > 0) then
@@ -2533,7 +2538,7 @@ end
 
 -- look for the item anywhere we can find it, skipping if we're looking
 -- for more than one
-function FishLib:FindThisItem(id, skipcount)
+function FishCore:FindThisItem(id, skipcount)
     skipcount = skipcount or 0;
     -- force id to be a number
     _, id, _, _ = self:SplitLink(id, true)
@@ -2565,7 +2570,7 @@ function FishLib:FindThisItem(id, skipcount)
 end
 
 -- Is this item openable?
-function FishLib:IsOpenable(item)
+function FishCore:IsOpenable(item)
     local canopen = false;
     local locked = false;
     local tooltip = self:GetFishTooltip();
@@ -2583,7 +2588,7 @@ function FishLib:IsOpenable(item)
 end
 
 -- Find out where the player is. Based on code from Astrolabe and wowwiki notes
-function FishLib:GetCurrentPlayerPosition()
+function FishCore:GetCurrentPlayerPosition()
     local x, y, _, mapId = LT:GetBestZoneCoordinate()
     local C, _, _ = self:GetCurrentMapContinent();
 
@@ -2591,48 +2596,48 @@ function FishLib:GetCurrentPlayerPosition()
 end
 
 -- Functions from LibCrayon, since somehow it's crashing some people
-FishLib.COLOR_HEX_RED    = "ff0000"
-FishLib.COLOR_HEX_ORANGE = "ff7f00"
-FishLib.COLOR_HEX_YELLOW = "ffff00"
-FishLib.COLOR_HEX_GREEN  = "00ff00"
-FishLib.COLOR_HEX_WHITE  = "ffffff"
-FishLib.COLOR_HEX_COPPER = "eda55f"
-FishLib.COLOR_HEX_SILVER = "c7c7cf"
-FishLib.COLOR_HEX_GOLD   = "ffd700"
-FishLib.COLOR_HEX_PURPLE = "9980CC"
-FishLib.COLOR_HEX_BLUE   = "0000ff"
-FishLib.COLOR_HEX_CYAN   = "00ffff"
-FishLib.COLOR_HEX_BLACK  = "000000"
+FishCore.COLOR_HEX_RED    = "ff0000"
+FishCore.COLOR_HEX_ORANGE = "ff7f00"
+FishCore.COLOR_HEX_YELLOW = "ffff00"
+FishCore.COLOR_HEX_GREEN  = "00ff00"
+FishCore.COLOR_HEX_WHITE  = "ffffff"
+FishCore.COLOR_HEX_COPPER = "eda55f"
+FishCore.COLOR_HEX_SILVER = "c7c7cf"
+FishCore.COLOR_HEX_GOLD   = "ffd700"
+FishCore.COLOR_HEX_PURPLE = "9980CC"
+FishCore.COLOR_HEX_BLUE   = "0000ff"
+FishCore.COLOR_HEX_CYAN   = "00ffff"
+FishCore.COLOR_HEX_BLACK  = "000000"
 
-function FishLib:Colorize(hexColor, text)
+function FishCore:Colorize(hexColor, text)
     return "|cff" .. tostring(hexColor or 'ffffff') .. tostring(text) .. "|r"
 end
 
-function FishLib:Red(text) return self:Colorize(self.COLOR_HEX_RED, text) end
+function FishCore:Red(text) return self:Colorize(self.COLOR_HEX_RED, text) end
 
-function FishLib:Orange(text) return self:Colorize(self.COLOR_HEX_ORANGE, text) end
+function FishCore:Orange(text) return self:Colorize(self.COLOR_HEX_ORANGE, text) end
 
-function FishLib:Yellow(text) return self:Colorize(self.COLOR_HEX_YELLOW, text) end
+function FishCore:Yellow(text) return self:Colorize(self.COLOR_HEX_YELLOW, text) end
 
-function FishLib:Green(text) return self:Colorize(self.COLOR_HEX_GREEN, text) end
+function FishCore:Green(text) return self:Colorize(self.COLOR_HEX_GREEN, text) end
 
-function FishLib:White(text) return self:Colorize(self.COLOR_HEX_WHITE, text) end
+function FishCore:White(text) return self:Colorize(self.COLOR_HEX_WHITE, text) end
 
-function FishLib:Copper(text) return self:Colorize(self.COLOR_HEX_COPPER, text) end
+function FishCore:Copper(text) return self:Colorize(self.COLOR_HEX_COPPER, text) end
 
-function FishLib:Silver(text) return self:Colorize(self.COLOR_HEX_SILVER, text) end
+function FishCore:Silver(text) return self:Colorize(self.COLOR_HEX_SILVER, text) end
 
-function FishLib:Gold(text) return self:Colorize(self.COLOR_HEX_GOLD, text) end
+function FishCore:Gold(text) return self:Colorize(self.COLOR_HEX_GOLD, text) end
 
-function FishLib:Purple(text) return self:Colorize(self.COLOR_HEX_PURPLE, text) end
+function FishCore:Purple(text) return self:Colorize(self.COLOR_HEX_PURPLE, text) end
 
-function FishLib:Blue(text) return self:Colorize(self.COLOR_HEX_BLUE, text) end
+function FishCore:Blue(text) return self:Colorize(self.COLOR_HEX_BLUE, text) end
 
-function FishLib:Cyan(text) return self:Colorize(self.COLOR_HEX_CYAN, text) end
+function FishCore:Cyan(text) return self:Colorize(self.COLOR_HEX_CYAN, text) end
 
-function FishLib:Black(text) return self:Colorize(self.COLOR_HEX_BLACK, text) end
+function FishCore:Black(text) return self:Colorize(self.COLOR_HEX_BLACK, text) end
 
-function FishLib:EllipsizeText(fontstring, text, width, append)
+function FishCore:EllipsizeText(fontstring, text, width, append)
     if not append then
         append = ""
     end
@@ -2646,11 +2651,11 @@ function FishLib:EllipsizeText(fontstring, text, width, append)
             width = width - fontstring:GetStringWidth()
         end
         local min = 0;
-        local N = string.len(text .. append);
+        local N = len(text .. append);
         local max = N - 1;
         while (min < max) do
-            local mid = math.floor((min + max) / 2);
-            local newtext = string.sub(text, 1, mid) .. "..." .. append;
+            local mid = floor((min + max) / 2);
+            local newtext = sub(text, 1, mid) .. "..." .. append;
             fontstring:SetText(newtext)
             fullwidth = fontstring:GetStringWidth()
             if fullwidth > width then
@@ -2662,7 +2667,7 @@ function FishLib:EllipsizeText(fontstring, text, width, append)
     end
 end
 
-local inf = math.huge
+local inf = huge
 
 local function GetThresholdPercentage(quality, ...)
     local n = select('#', ...)
@@ -2711,7 +2716,7 @@ local function GetThresholdPercentage(quality, ...)
     return ((n - 2) + (quality - last) / (value - last)) / (n - 1)
 end
 
-function FishLib:GetThresholdColor(quality, ...)
+function FishCore:GetThresholdColor(quality, ...)
     if quality ~= quality or quality == inf or quality == -inf then
         return 1, 1, 1
     end
@@ -2729,13 +2734,13 @@ function FishLib:GetThresholdColor(quality, ...)
     end
 end
 
-function FishLib:GetThresholdHexColor(quality, ...)
+function FishCore:GetThresholdHexColor(quality, ...)
     local r, g, b = self:GetThresholdColor(quality, ...)
-    return string.format("%02x%02x%02x", r * 255, g * 255, b * 255)
+    return format("%02x%02x%02x", r * 255, g * 255, b * 255)
 end
 
 -- addon message support
-function FishLib:RegisterAddonMessagePrefix(prefix)
+function FishCore:RegisterAddonMessagePrefix(prefix)
     C_ChatInfo.RegisterAddonMessagePrefix(prefix)
 end
 
@@ -2757,18 +2762,18 @@ local function FixupThis(target, tag, what)
         return what;
     elseif (type(what) == "string") then
         local pattern = "#([A-Z0-9_]+)#";
-        local s, e, w = string.find(what, pattern);
+        local s, e, w = find(what, pattern);
         while (w) do
             if (type(target[w]) == "string") then
                 local s1 = strsub(what, 1, s - 1);
                 local s2 = strsub(what, e + 1);
                 what = s1 .. target[w] .. s2;
-                s, e, w = string.find(what, pattern);
-            elseif (FishLib["COLOR_HEX_" .. w]) then
+                s, e, w = find(what, pattern);
+            elseif (FishCore["COLOR_HEX_" .. w]) then
                 local s1 = strsub(what, 1, s - 1);
                 local s2 = strsub(what, e + 1);
-                what = s1 .. "ff" .. FishLib["COLOR_HEX_" .. w] .. s2;
-                s, e, w = string.find(what, pattern);
+                what = s1 .. "ff" .. FishCore["COLOR_HEX_" .. w] .. s2;
+                s, e, w = find(what, pattern);
             else
                 -- stop if we can't find something to replace it with
                 w = nil;
@@ -2780,7 +2785,7 @@ local function FixupThis(target, tag, what)
     return what;
 end
 
-function FishLib:FixupEntry(constants, tag)
+function FishCore:FixupEntry(constants, tag)
     FixupThis(constants, tag, constants[tag]);
 end
 
@@ -2800,7 +2805,7 @@ end
 
 local function FixupBindings(target)
     for tag, _ in pairs(target) do
-        if (string.find(tag, "^BINDING")) then
+        if (find(tag, "^BINDING")) then
             setglobal(tag, target[tag]);
             target[tag] = nil;
         end
@@ -2822,7 +2827,7 @@ local function LoadTranslation(source, lang, target, record)
     end
 end
 
-function FishLib:AddonVersion(addon)
+function FishCore:AddonVersion(addon)
     local addonCount = C_AddOns.GetNumAddOns();
     for addonIndex = 1, addonCount do
         local name, _, _, _, _, _, _ = C_AddOns.GetAddOnInfo(addonIndex);
@@ -2832,7 +2837,7 @@ function FishLib:AddonVersion(addon)
     end
 end
 
-function FishLib:Translate(addon, source, target, forced)
+function FishCore:Translate(addon, source, target, forced)
     local locale = forced or GetLocale();
     target.VERSION = self:AddonVersion(addon)
     LoadTranslation(source, locale, target);
@@ -2848,23 +2853,23 @@ function FishLib:Translate(addon, source, target, forced)
 end
 
 -- Pool types
-FishLib.SCHOOL_FISH = 0;
-FishLib.SCHOOL_WRECKAGE = 1;
-FishLib.SCHOOL_DEBRIS = 2;
-FishLib.SCHOOL_WATER = 3;
-FishLib.SCHOOL_TASTY = 4;
-FishLib.SCHOOL_OIL = 5;
-FishLib.SCHOOL_CHURNING = 6;
-FishLib.SCHOOL_FLOTSAM = 7;
-FishLib.SCHOOL_FIRE = 8;
-FishLib.COMPRESSED_OCEAN = 9;
+FishCore.SCHOOL_FISH = 0;
+FishCore.SCHOOL_WRECKAGE = 1;
+FishCore.SCHOOL_DEBRIS = 2;
+FishCore.SCHOOL_WATER = 3;
+FishCore.SCHOOL_TASTY = 4;
+FishCore.SCHOOL_OIL = 5;
+FishCore.SCHOOL_CHURNING = 6;
+FishCore.SCHOOL_FLOTSAM = 7;
+FishCore.SCHOOL_FIRE = 8;
+FishCore.COMPRESSED_OCEAN = 9;
 
 local FLTrans = {};
 
 function FLTrans:Setup(lang, school, lurename, ...)
     self[lang] = {};
     -- as long as string.lower breaks all UTF-8 equally, this should still work
-    self[lang].SCHOOL = string.lower(school);
+    self[lang].SCHOOL = lower(school);
     if lurename then
         self[lang].LURE_NAME = lurename;
     end
@@ -2879,80 +2884,80 @@ function FLTrans:Setup(lang, school, lurename, ...)
 end
 
 FLTrans:Setup("enUS", "school", "Fishing Lure",
-    "Floating Wreckage", FishLib.SCHOOL_WRECKAGE,
-    "Patch of Elemental Water", FishLib.SCHOOL_WATER,
-    "Floating Debris", FishLib.SCHOOL_DEBRIS,
-    "Oil Spill", FishLib.SCHOOL_OIL,
-    "Stonescale Eel Swarm", FishLib.SCHOOL_FISH,
-    "Muddy Churning Water", FishLib.SCHOOL_CHURNING,
-    "Pure Water", FishLib.SCHOOL_WATER,
-    "Steam Pump Flotsam", FishLib.SCHOOL_FLOTSAM,
-    "School of Tastyfish", FishLib.SCHOOL_TASTY,
-    "Pool of Fire", FishLib.SCHOOL_FIRE,
-    "Hyper-Compressed Ocean", FishLib.COMPRESSED_OCEAN);
+    "Floating Wreckage", FishCore.SCHOOL_WRECKAGE,
+    "Patch of Elemental Water", FishCore.SCHOOL_WATER,
+    "Floating Debris", FishCore.SCHOOL_DEBRIS,
+    "Oil Spill", FishCore.SCHOOL_OIL,
+    "Stonescale Eel Swarm", FishCore.SCHOOL_FISH,
+    "Muddy Churning Water", FishCore.SCHOOL_CHURNING,
+    "Pure Water", FishCore.SCHOOL_WATER,
+    "Steam Pump Flotsam", FishCore.SCHOOL_FLOTSAM,
+    "School of Tastyfish", FishCore.SCHOOL_TASTY,
+    "Pool of Fire", FishCore.SCHOOL_FIRE,
+    "Hyper-Compressed Ocean", FishCore.COMPRESSED_OCEAN);
 
 FLTrans:Setup("koKR", "떼", "낚시용 미끼",
-    "표류하는 잔해", FishLib.SCHOOL_WRECKAGE, -- Floating Wreckage
-    "정기가 흐르는 물 웅덩이", FishLib.SCHOOL_WATER, --	Patch of Elemental Water
-    "표류하는 파편", FishLib.SCHOOL_DEBRIS, -- Floating Debris
-    "떠다니는 기름", FishLib.SCHOOL_OIL, -- Oil Spill
-    "거품이는 진흙탕물", FishLib.SCHOOL_CHURNING, -- Muddy Churning Water
-    "깨끗한 물", FishLib.SCHOOL_WATER, -- Pure Water
-    "증기 양수기 표류물", FishLib.SCHOOL_FLOTSAM, -- Steam Pump Flotsam
-    "맛둥어 떼", FishLib.SCHOOL_TASTY, -- School of Tastyfish
-    "초압축 바다", FishLib.COMPRESSED_OCEAN);
+    "표류하는 잔해", FishCore.SCHOOL_WRECKAGE, -- Floating Wreckage
+    "정기가 흐르는 물 웅덩이", FishCore.SCHOOL_WATER, --	Patch of Elemental Water
+    "표류하는 파편", FishCore.SCHOOL_DEBRIS, -- Floating Debris
+    "떠다니는 기름", FishCore.SCHOOL_OIL, -- Oil Spill
+    "거품이는 진흙탕물", FishCore.SCHOOL_CHURNING, -- Muddy Churning Water
+    "깨끗한 물", FishCore.SCHOOL_WATER, -- Pure Water
+    "증기 양수기 표류물", FishCore.SCHOOL_FLOTSAM, -- Steam Pump Flotsam
+    "맛둥어 떼", FishCore.SCHOOL_TASTY, -- School of Tastyfish
+    "초압축 바다", FishCore.COMPRESSED_OCEAN);
 
 FLTrans:Setup("deDE", "schwarm", "Angelköder",
-    "Treibende Wrackteile", FishLib.SCHOOL_WRECKAGE,              --  Floating Wreckage
-    "Stelle mit Elementarwasser", FishLib.SCHOOL_WATER,           --  Patch of Elemental Water
-    "Schwimmende Trümmer", FishLib.SCHOOL_DEBRIS,                 --  Floating Debris
-    "Ölfleck", FishLib.SCHOOL_OIL,                                --	Oil Spill
-    "Schlammiges aufgewühltes Gewässer", FishLib.SCHOOL_CHURNING, --	Muddy Churning Water
-    "Reines Wasser", FishLib.SCHOOL_WATER,                        --	 Pure Water
-    "Treibgut der Dampfpumpe", FishLib.SCHOOL_FLOTSAM,            --	 Steam Pump Flotsam
-    "Leckerfischschwarm", FishLib.SCHOOL_TASTY,                   -- School of Tastyfish
-    "Hyperkomprimierter Ozean", FishLib.COMPRESSED_OCEAN);
+    "Treibende Wrackteile", FishCore.SCHOOL_WRECKAGE,              --  Floating Wreckage
+    "Stelle mit Elementarwasser", FishCore.SCHOOL_WATER,           --  Patch of Elemental Water
+    "Schwimmende Trümmer", FishCore.SCHOOL_DEBRIS,                 --  Floating Debris
+    "Ölfleck", FishCore.SCHOOL_OIL,                                --	Oil Spill
+    "Schlammiges aufgewühltes Gewässer", FishCore.SCHOOL_CHURNING, --	Muddy Churning Water
+    "Reines Wasser", FishCore.SCHOOL_WATER,                        --	 Pure Water
+    "Treibgut der Dampfpumpe", FishCore.SCHOOL_FLOTSAM,            --	 Steam Pump Flotsam
+    "Leckerfischschwarm", FishCore.SCHOOL_TASTY,                   -- School of Tastyfish
+    "Hyperkomprimierter Ozean", FishCore.COMPRESSED_OCEAN);
 
 FLTrans:Setup("frFR", "banc", "Appât de pêche",
-    "Débris flottants", FishLib.SCHOOL_WRECKAGE,             --	 Floating Wreckage
-    "Remous d'eau élémentaire", FishLib.SCHOOL_WATER,        --	Patch of Elemental Water
-    "Débris flottant", FishLib.SCHOOL_DEBRIS,                --	 Floating Debris
-    "Nappe de pétrole", FishLib.SCHOOL_OIL,                  --  Oil Spill
-    "Eaux troubles et agitées", FishLib.SCHOOL_CHURNING,     --	Muddy Churning Water
-    "Eau pure", FishLib.SCHOOL_WATER,                        --  Pure Water
-    "Détritus de la pompe à vapeur", FishLib.SCHOOL_FLOTSAM, --	 Steam Pump Flotsam
-    "Banc de courbine", FishLib.SCHOOL_TASTY,                -- School of Tastyfish
-    "Océan hyper-comprimé", FishLib.COMPRESSED_OCEAN);
+    "Débris flottants", FishCore.SCHOOL_WRECKAGE,             --	 Floating Wreckage
+    "Remous d'eau élémentaire", FishCore.SCHOOL_WATER,        --	Patch of Elemental Water
+    "Débris flottant", FishCore.SCHOOL_DEBRIS,                --	 Floating Debris
+    "Nappe de pétrole", FishCore.SCHOOL_OIL,                  --  Oil Spill
+    "Eaux troubles et agitées", FishCore.SCHOOL_CHURNING,     --	Muddy Churning Water
+    "Eau pure", FishCore.SCHOOL_WATER,                        --  Pure Water
+    "Détritus de la pompe à vapeur", FishCore.SCHOOL_FLOTSAM, --	 Steam Pump Flotsam
+    "Banc de courbine", FishCore.SCHOOL_TASTY,                -- School of Tastyfish
+    "Océan hyper-comprimé", FishCore.COMPRESSED_OCEAN);
 
 FLTrans:Setup("esES", "banco", "Cebo de pesca",
-    "Restos de un naufragio", FishLib.SCHOOL_WRECKAGE,            --	Floating Wreckage
-    "Restos flotando", FishLib.SCHOOL_DEBRIS,                     --	 Floating Debris
-    "Vertido de petr\195\179leo", FishLib.SCHOOL_OIL,             --  Oil Spill
-    "Agua pura", FishLib.SCHOOL_WATER,                            --	Pure Water
-    "Restos flotantes de bomba de vapor", FishLib.SCHOOL_FLOTSAM, --	Steam Pump Flotsam
-    "Banco de pezricos", FishLib.SCHOOL_TASTY,                    -- School of Tastyfish
-    "Océano hipercomprimido", FishLib.COMPRESSED_OCEAN);
+    "Restos de un naufragio", FishCore.SCHOOL_WRECKAGE,            --	Floating Wreckage
+    "Restos flotando", FishCore.SCHOOL_DEBRIS,                     --	 Floating Debris
+    "Vertido de petr\195\179leo", FishCore.SCHOOL_OIL,             --  Oil Spill
+    "Agua pura", FishCore.SCHOOL_WATER,                            --	Pure Water
+    "Restos flotantes de bomba de vapor", FishCore.SCHOOL_FLOTSAM, --	Steam Pump Flotsam
+    "Banco de pezricos", FishCore.SCHOOL_TASTY,                    -- School of Tastyfish
+    "Océano hipercomprimido", FishCore.COMPRESSED_OCEAN);
 
 FLTrans:Setup("zhCN", "鱼群", "鱼饵",
-    "漂浮的残骸", FishLib.SCHOOL_WRECKAGE, --  Floating Wreckage
-    "元素之水", FishLib.SCHOOL_WATER, --	 Patch of Elemental Water
-    "漂浮的碎片", FishLib.SCHOOL_DEBRIS, --	Floating Debris
-    "油井", FishLib.SCHOOL_OIL, --	Oil Spill
-    "石鳞鳗群", FishLib.SCHOOL_FISH, --	Stonescale Eel Swarm
-    "混浊的水", FishLib.SCHOOL_CHURNING, --	 Muddy Churning Water
-    "纯水", FishLib.SCHOOL_WATER, --  Pure Water
-    "蒸汽泵废料", FishLib.SCHOOL_FLOTSAM, --	 Steam Pump Flotsam
-    "可口鱼", FishLib.SCHOOL_TASTY);
+    "漂浮的残骸", FishCore.SCHOOL_WRECKAGE, --  Floating Wreckage
+    "元素之水", FishCore.SCHOOL_WATER, --	 Patch of Elemental Water
+    "漂浮的碎片", FishCore.SCHOOL_DEBRIS, --	Floating Debris
+    "油井", FishCore.SCHOOL_OIL, --	Oil Spill
+    "石鳞鳗群", FishCore.SCHOOL_FISH, --	Stonescale Eel Swarm
+    "混浊的水", FishCore.SCHOOL_CHURNING, --	 Muddy Churning Water
+    "纯水", FishCore.SCHOOL_WATER, --  Pure Water
+    "蒸汽泵废料", FishCore.SCHOOL_FLOTSAM, --	 Steam Pump Flotsam
+    "可口鱼", FishCore.SCHOOL_TASTY);
 
 FLTrans:Setup("zhTW", "群", "鱼饵",
-    "漂浮的殘骸", FishLib.SCHOOL_WRECKAGE, --  Floating Wreckage
-    "元素之水", FishLib.SCHOOL_WATER, --	 Patch of Elemental Water
-    "漂浮的碎片", FishLib.SCHOOL_DEBRIS, --	Floating Debris
-    "油井", FishLib.SCHOOL_OIL, --	Oil Spill
-    "混濁的水", FishLib.SCHOOL_CHURNING, --	 Muddy Churning Water
-    "純水", FishLib.SCHOOL_WATER, --  Pure Water
-    "蒸汽幫浦漂浮殘骸", FishLib.SCHOOL_FLOTSAM, --  Steam Pump Flotsam
-    "斑點可口魚魚群", FishLib.SCHOOL_TASTY);
+    "漂浮的殘骸", FishCore.SCHOOL_WRECKAGE, --  Floating Wreckage
+    "元素之水", FishCore.SCHOOL_WATER, --	 Patch of Elemental Water
+    "漂浮的碎片", FishCore.SCHOOL_DEBRIS, --	Floating Debris
+    "油井", FishCore.SCHOOL_OIL, --	Oil Spill
+    "混濁的水", FishCore.SCHOOL_CHURNING, --	 Muddy Churning Water
+    "純水", FishCore.SCHOOL_WATER, --  Pure Water
+    "蒸汽幫浦漂浮殘骸", FishCore.SCHOOL_FLOTSAM, --  Steam Pump Flotsam
+    "斑點可口魚魚群", FishCore.SCHOOL_TASTY);
 
-FishLib:Translate("LibFishing", FLTrans, FishLib);
+FishCore:Translate("LibFishing", FLTrans, FishCore);
 FLTrans = nil;
