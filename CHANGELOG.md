@@ -1,24 +1,25 @@
-# LibFishing-1.0
+# FishingCore
 
 ## Latest Version
 
 ### 0.11-alpha
 
-- Testing updates for The War Within expansion
-- LibFishing-1.0 has been converted to a separate library
-- Updated included libraries
-- Version number bumped up to match current expansion number
+- Testing updates for The War Within expansion.
+- LibFishing-1.0 has been converted to a separate library.
+- Updated included libraries.
+- Version number bumped up to match current expansion number.
+- Name change to FishingCore as this handles the core functions of several addons but isn't very "Library" like.
 
 ## Previous Versions
 
 ### 0.9.6
 
-- Remove unused registered events
+- Remove unused registered events.
 
 ### 0.9.5
 
-- First cut a Shadowlands version
+- First cut a Shadowlands version.
 
 ### 0.9
 
-- update fishing library
+- Update fishing library.
