@@ -1,4 +1,4 @@
-package-as: LibFishing-1.0
+package-as: FishingCore
 
 externals:
     Libs/LibStub:
