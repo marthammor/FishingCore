@@ -1,7 +1,7 @@
 ﻿--[[
-Name: LibFishing-1.0
+Name: FishingCore
 Maintainers: Sutorix <sutorix@hotmail.com>
-Description: A library with fishing support routines used by Fishing Buddy, Fishing Ace and FB_Broker.
+Description: Main set of fishing routines used by Fishing Buddy, Fishing Ace and FB_Broker.
 Copyright (c) by Bob Schumaker
 Licensed under a Creative Commons "Attribution Non-Commercial Share Alike" License
 --]]
@@ -9,10 +9,10 @@ Licensed under a Creative Commons "Attribution Non-Commercial Share Alike" Licen
 -- 5.0.4 has a problem with a global "_" (see some for loops below)
 local _
 
----@class LibFishing-1.0
+---@class FishingCore
 local FishLib = {}
 
-local MAJOR, MINOR = "LibFishing-1.0", 110000 -- TWW 11.00.00
+local MAJOR, MINOR = "FishingCore", 110000 -- TWW 11.00.00
 assert(LibStub, MAJOR .. " requires LibStub")
 
 local _, lastVersion = LibStub:NewLibrary(MAJOR, MINOR)
