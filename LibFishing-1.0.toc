@@ -1,9 +1,0 @@
-## Interface: 110000
-## Title: Lib: Fishing-1.0
-## Version: 0.11
-## Notes: Libary with fishing support routines.
-## Author: Sutorix
-## X-Category: Library
-
-libs.xml
-LibFishing-1.0.lua

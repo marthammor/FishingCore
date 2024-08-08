@@ -1,0 +1,9 @@
+## Interface: 110000
+## Title: FishingCore
+## Version: 11
+## Notes: Core module containing fishing support routines.
+## Author: Sutorix
+## X-Category: Library
+
+libs.xml
+FishingCore.lua
