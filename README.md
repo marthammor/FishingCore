@@ -1,6 +1,6 @@
-# LibFishing-1.0
+# FishingCore
 
-Fishing library created by Sutorix `<sutorix AT hotmail DOT com>` for use with Fishing Ace, Fishing Buddy, and FB_Broker.
+Core module containing fishing routines created by Sutorix `<sutorix AT hotmail DOT com>` for use with Fishing Ace, Fishing Buddy, and FB_Broker.
 
 Copyright (c) by Bob Schumaker
 
