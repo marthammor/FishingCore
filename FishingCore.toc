@@ -1,4 +1,4 @@
-## Interface: 110000
+## Interface: 110002
 ## Title: FishingCore
 ## Version: 11
 ## Notes: Core module containing fishing support routines.

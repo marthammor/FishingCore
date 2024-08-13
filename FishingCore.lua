@@ -8,14 +8,14 @@ Licensed under a Creative Commons "Attribution Non-Commercial Share Alike" Licen
 
 local _G, _G
 
-local MAJOR, MINOR = "FishingCore", 110000 -- TWW 11.00.00
+local MAJOR, MINOR = "FishingCore", 110002 -- TWW 11.00.02
 
 local FishCore, lastVersion = LibStub:NewLibrary(MAJOR, MINOR)
 
 if not FishCore then return end -- already loaded by something else
 
-local tonumber, tostring, pairs, ipairs, type, next, select = tonumber, tostring, pairs, ipairs, type, next, select
-local unpack, sort = table.unpack, table.sort
+local tonumber, tostring, pairs, ipairs, type, next, select, unpack = tonumber, tostring, pairs, ipairs, type, next, select, unpack
+local sort = table.sort
 local getmetatable, setmetatable = getmetatable, setmetatable
 local format, find, sub, gsub, match, gmatch, len, lower =
     string.format, string.find, string.sub, string.gsub, string.match, string.gmatch, string.len, string.lower
@@ -703,7 +703,7 @@ function FishCore:CancelBuff(buffId)
         end
         local idx, _ = self:GetBuff(buffId);
         if idx then
-            CancelUnitBuff("player", idx, CANCELABLE)
+            CancelUnitBuff("player", idx, "CANCELABLE")
         end
     end
 end
@@ -1540,7 +1540,6 @@ function FishCore:IsFishingGear()
     return self.hasgear;
 end
 
----@field
 function FishCore:IsFishingReady(partial)
     if (partial) then
         return self:IsFishingGear();

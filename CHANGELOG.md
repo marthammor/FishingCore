@@ -4,8 +4,9 @@
 
 ### 0.11-alpha
 
+- Toc updated for 11.0.2
 - Testing updates for The War Within expansion.
-- LibFishing-1.0 has been converted to a separate library.
+- LibFishing-1.0 has been converted to a separate module, FishingCore.
 - Updated included libraries.
 - Version number bumped up to match current expansion number.
 - Name change to FishingCore as this handles the core functions of several addons but isn't very "Library" like.
