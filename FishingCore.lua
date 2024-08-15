@@ -2199,25 +2199,29 @@ function FishCore:CreateSAButton()
     btn.fl = self;
 end
 
-FishCore.MOUSE1 = "RightButtonDown";
-FishCore.MOUSE2 = "Button4Down";
-FishCore.MOUSE3 = "Button5Down";
-FishCore.MOUSE4 = "MiddleButtonDown";
+FishCore.MOUSE1 = "LeftButtonDown";
+FishCore.MOUSE2 = "RightButtonDown";
+FishCore.MOUSE3 = "Button4Down";
+FishCore.MOUSE4 = "Button5Down";
+FishCore.MOUSE5 = "MiddleButtonDown";
 FishCore.CastButton = {};
-FishCore.CastButton[FishCore.MOUSE1] = "RightButton";
-FishCore.CastButton[FishCore.MOUSE2] = "Button4";
-FishCore.CastButton[FishCore.MOUSE3] = "Button5";
-FishCore.CastButton[FishCore.MOUSE4] = "MiddleButton";
+FishCore.CastButton[FishCore.MOUSE1] = "LeftButton";
+FishCore.CastButton[FishCore.MOUSE2] = "RightButton";
+FishCore.CastButton[FishCore.MOUSE3] = "Button4";
+FishCore.CastButton[FishCore.MOUSE4] = "Button5";
+FishCore.CastButton[FishCore.MOUSE5] = "MiddleButton";
 FishCore.CastingKeys = {};
-FishCore.CastingKeys[FishCore.MOUSE1] = "BUTTON2";
-FishCore.CastingKeys[FishCore.MOUSE2] = "BUTTON4";
-FishCore.CastingKeys[FishCore.MOUSE3] = "BUTTON5";
-FishCore.CastingKeys[FishCore.MOUSE4] = "BUTTON3";
+FishCore.CastingKeys[FishCore.MOUSE1] = "BUTTON1";
+FishCore.CastingKeys[FishCore.MOUSE2] = "BUTTON2";
+FishCore.CastingKeys[FishCore.MOUSE3] = "BUTTON4";
+FishCore.CastingKeys[FishCore.MOUSE4] = "BUTTON5";
+FishCore.CastingKeys[FishCore.MOUSE5] = "BUTTON3";
 FishCore.MapButton = {};
-FishCore.MapButton["RightButton"] = FishCore.MOUSE1;
-FishCore.MapButton["Button4"] = FishCore.MOUSE2;
-FishCore.MapButton["Button5"] = FishCore.MOUSE3;
-FishCore.MapButton["MiddleButton"] = FishCore.MOUSE4;
+FishCore.MapButton["LeftButton"] = FishCore.MOUSE1;
+FishCore.MapButton["RightButton"] = FishCore.MOUSE2;
+FishCore.MapButton["Button4"] = FishCore.MOUSE3;
+FishCore.MapButton["Button5"] = FishCore.MOUSE4;
+FishCore.MapButton["MiddleButton"] = FishCore.MOUSE5;
 
 
 function FishCore:GetSAMouseEvent()
