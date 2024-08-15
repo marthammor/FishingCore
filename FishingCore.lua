@@ -1639,8 +1639,10 @@ end
 
 -- look for double clicks
 function FishCore:CheckForDoubleClick(button)
-    if FishCore.MapButton[button] ~= self.buttonevent then
-        return false;
+    if FishCore.MapButton[button] then
+        if FishCore.MapButton[button] ~= self.buttonevent then
+            return false;
+        end
     end
     if (GetNumLootItems() == 0 and self.lastClickTime) then
         local pressTime = GetTime();
