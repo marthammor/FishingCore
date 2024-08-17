@@ -1399,22 +1399,15 @@ function FishCore:ChatLink(item, name, color)
     end
 end
 
-FishLibTooltip = FishLibTooltip or {}
+FishLibTooltip = FishLibTooltip or CreateFrame("GameTooltip", "FishLibTooltip", nil, "GameTooltipTemplate")
+FishLibTooltip:SetOwner(WorldFrame, "ANCHOR_NONE")
+
 -- code taken from examples on wowwiki
-function FishCore:GetFishTooltip(force)
+function FishCore:GetFishTooltip()
     local tooltip = FishLibTooltip
-    if (force or not tooltip) then
-        tooltip = CreateFrame("GameTooltip", "FishLibTooltip", nil, "GameTooltipTemplate")
-        tooltip:SetOwner(WorldFrame, "ANCHOR_NONE")
-        -- Allow tooltip SetX() methods to dynamically add new lines based on these
-        -- I don't think we need it if we use GameTooltipTemplate...
-        tooltip:AddFontStrings(
-            tooltip:CreateFontString("$parentTextLeft9", nil, "GameTooltipText"),
-            tooltip:CreateFontString("$parentTextRight9", nil, "GameTooltipText"))
-    end
     -- the owner gets unset sometimes, not sure why
-    local owner, anchor = tooltip:GetOwner()
-    if (not owner or not anchor) then
+    local owner = tooltip:GetOwner()
+    if (not owner) then
         tooltip:SetOwner(WorldFrame, "ANCHOR_NONE")
     end
     return FishLibTooltip
@@ -2379,22 +2372,22 @@ end
 
 -- Fishing bonus. We used to be able to get the current modifier from
 -- the skill API, but now we have to figure it out ourselves
-local match
+local matches
 function FishCore:FishingBonusPoints(item, inv)
     local points = 0
     if (item and item ~= "") then
-        if (not match) then
+        if (not matches) then
             local _, skillname = self:GetFishingSpellInfo()
-            match = {}
-            match[1] = "%+(%d+) " .. skillname
-            match[2] = skillname .. " %+(%d+)"
+            matches = {}
+            matches[1] = "%+(%d+) " .. skillname
+            matches[2] = skillname .. " %+(%d+)"
             -- Equip: Fishing skill increased by N.
-            match[3] = skillname .. "[%a%s]+(%d+)%."
+            matches[3] = skillname .. "[%a%s]+(%d+)%."
             if (GetLocale() == "deDE") then
-                tinsert(match, "+(%d+) Angelfertigkeit")
+                tinsert(matches, "+(%d+) Angelfertigkeit")
             end
             if self.LURE_NAME then
-                tinsert(match, self.LURE_NAME .. " %+(%d+)")
+                tinsert(matches, self.LURE_NAME .. " %+(%d+)")
             end
         end
         local tooltip = self:GetFishTooltip()
@@ -2407,7 +2400,7 @@ function FishCore:FishingBonusPoints(item, inv)
         for i = 1, #lines do
             local bodyslot = lines[i]:gsub("^%s*(.-)%s*$", "%1")
             if (len(bodyslot) > 0) then
-                for _, pat in ipairs(match) do
+                for _, pat in ipairs(matches) do
                     local _, _, bonus = find(bodyslot, pat)
                     if (bonus) then
                         points = points + bonus
