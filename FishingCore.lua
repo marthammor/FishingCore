@@ -23,8 +23,6 @@ local floor, huge = math.floor, math.huge
 
 local WoWRetail = (WOW_PROJECT_ID == WOW_PROJECT_MAINLINE)
 local WoWClassic = (WOW_PROJECT_ID == WOW_PROJECT_CLASSIC)
-local WoWBC = (WOW_PROJECT_ID == WOW_PROJECT_BURNING_CRUSADE_CLASSIC) -- Fairly sure this no longer exists
-local WoWWrath = (WOW_PROJECT_ID == WOW_PROJECT_WRATH_CLASSIC)        -- Same with this
 local WoWCata = (WOW_PROJECT_ID == WOW_PROJECT_CATACLYSM_CLASSIC)
 
 local WoW = {}
@@ -80,7 +78,6 @@ local BSZ = FishLib_GetLocaleLibBabble("LibBabble-SubZone-3.0")
 local BSL = LibStub("LibBabble-SubZone-3.0"):GetBaseLookupTable()
 local BSZR = LibStub("LibBabble-SubZone-3.0"):GetReverseLookupTable()
 local HBD = LibStub("HereBeDragons-2.0")
-local hbd = LibStub("HereBeDragons-2.0")
 
 local LT
 if WoWClassic then
@@ -90,8 +87,6 @@ elseif WoWCata then
 else
     LT = LibStub("LibTourist-3.0")
 end
-
-FishCore.HBD = HBD
 
 if not lastVersion then
     FishCore.caughtSoFar = 0
@@ -196,12 +191,9 @@ FishCore.continent_fishing = {
     { ["max"] = 175, ["skillid"] = 2585, ["cat"] = 1114, ["rank"] = 0 }, -- Zandalar Fishing
     { ["max"] = 200, ["skillid"] = 2754, ["cat"] = 1391, ["rank"] = 0 }, -- Shadowlands Fishing
     { ["max"] = 100, ["skillid"] = 2826, ["cat"] = 1805, ["rank"] = 0 }, -- Dragonflight Fishing
+    { ["max"] = 300, ["skillid"] = 2876, ["cat"] = 1908, ["rank"] = 0 }, -- Khaz Algar Fishing
 }
 local DEFAULT_SKILL = FishCore.continent_fishing[1]
-
-if WoWBC then
-    FishCore.continent_fishing[2].max = 375
-end
 
 local FISHING_LEVELS = {
     300, -- Classic
@@ -214,6 +206,7 @@ local FISHING_LEVELS = {
     175, -- BfA
     200, -- Shadowlands
     100, -- Dragonflight
+    300, -- War Within
 }
 
 local CHECKINTERVAL = 0.5
@@ -1697,6 +1690,7 @@ FishCore.KUL_TIRAS = 9
 FishCore.ZANDALAR = 10
 FishCore.SHADOWLANDS = 11
 FishCore.DRAGONFLIGHT = 12
+FishCore.WARWITHIN = 13
 
 -- Darkmoon Island is it's own continent?
 local continent_map = {
@@ -1714,6 +1708,7 @@ local continent_map = {
     [407] = FishCore.THE_MAELSTROM,  -- Darkmoon Island
     [1550] = FishCore.SHADOWLANDS,   -- Shadowlands
     [1978] = FishCore.DRAGONFLIGHT,  -- Dragon Isles
+    [2274] = FishCore.WARWITHIN,     -- Khaz Algar
 }
 
 local special_maps = {
@@ -1734,6 +1729,7 @@ local special_maps = {
 -- Draenor, 7, 572
 -- Broken Isles, 8, 619
 -- Dragon Isles, 12, 1978
+-- Khaz Algar, 13, 2274
 function FishCore:GetMapContinent(mapId, debug)
     if HBD.mapData[mapId] and mapId then
         local lastMapId
