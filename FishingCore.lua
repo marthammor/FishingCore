@@ -46,16 +46,6 @@ function FishCore:WoWVersion()
     return WoW.major, WoW.minor, WoW.dot, WoWClassic
 end
 
-local BlizzardTradeSkillUI
-local BlizzardTradeSkillFrame
-if WoWRetail then
-    BlizzardTradeSkillUI = "Blizzard_Professions"
-    BlizzardTradeSkillFrame = "ProfessionsFrame"
-else
-    BlizzardTradeSkillUI = "Blizzard_TradeSkillUI"
-    BlizzardTradeSkillFrame = "TradeSkillFrame"
-end
-
 -- Some code suggested by the author of LibBabble-SubZone so I don't have
 -- to add the overrides myself...
 local function FishLib_GetLocaleLibBabble(typ)
@@ -132,6 +122,7 @@ function FishCore:GetFishingProfession()
 end
 
 -- support finding the fishing skill in classic
+-- Only called from GetFishingSpellInfo
 local function FindSpellID(thisone)
     local id = 1
     local spellTexture = GetSpellTexture(id)
@@ -253,6 +244,19 @@ function FishCore:QueueUpdateFishingSkillData()
     end
 end
 
+--[[
+-- These following two functions are unused?
+
+local BlizzardTradeSkillUI
+local BlizzardTradeSkillFrame
+if WoWRetail then
+    BlizzardTradeSkillUI = "Blizzard_Professions"
+    BlizzardTradeSkillFrame = "ProfessionsFrame"
+else
+    BlizzardTradeSkillUI = "Blizzard_TradeSkillUI"
+    BlizzardTradeSkillFrame = "TradeSkillFrame"
+end
+
 -- Open up the tradeskill window and get the current data. Only Mainline safe!
 local function SkillInitialize(self, elapsed)
     self.lastUpdate = self.lastUpdate + elapsed
@@ -313,6 +317,7 @@ function FishCore:GetTradeSkillData()
         btn.skillupdate:Show()
     end
 end
+--]]
 
 function FishCore:UpdateFishingSkill()
     local fishing = self:GetFishingProfession()
